@@ -14,6 +14,22 @@ createNameSpace("realityEditor.addons");
         }
     });
 
+    let addonFolderList = null;
+    fetch('/addons').then((res) => {
+        return res.json();
+    }).then((addonFolders) => {
+        addonFolderList = addonFolders;
+        console.log('Loaded addons: ' + addonFolderList);
+    });
+
+    /**
+     * For debugging purposes, we can query which add-ons are present
+     * @return {Array.<string>}
+     */
+    function getList() {
+        return addonFolderList;
+    }
+
     const callbacks = {
         init: [],
         networkSetSettings: [],
@@ -60,4 +76,6 @@ createNameSpace("realityEditor.addons");
     exports.onInit = onInit;
     exports.onNetworkSetSettings = onNetworkSetSettings;
     exports.addCallback = addCallback;
+
+    exports.getList = getList;
 }(realityEditor.addons));

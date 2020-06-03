@@ -1039,6 +1039,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
         realityEditor.network.onFoundObjectButtonMessage(msgContent);
         return;
     }
+
+    if (typeof msgContent.getAddonsList !== 'undefined') {
+        let errorMessage = 'Cannot list compiled add-ons using this userinterface version.';
+        let addonList = realityEditor.addons.getList();
+        if (!addonList) {
+            addonList = [errorMessage]; // render an error message if add-on list is null
+        }
+        document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+            addonsList: addonList
+        }), "*");
+        return;
+    }
     
     if (msgContent.resendOnElementLoad) {
         var elt = document.getElementById('iframe' + msgContent.nodeKey);
