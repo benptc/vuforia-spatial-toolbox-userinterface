@@ -103,12 +103,12 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
             x: overlayDiv.clientWidth/2 - touchOffset.x,
             y: overlayDiv.clientHeight/2 - touchOffset.y
         };
-        var scaleDifference = Math.max(0.2, newScale) - positionData.scale;
+        var scaleDifference = Math.max(0.1, newScale) - positionData.scale;
         positionData.x += touchOffsetFromCenter.x * scaleDifference;
         positionData.y += touchOffsetFromCenter.y * scaleDifference;
     }
     
-    positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
+    positionData.scale = Math.max(0.1, newScale); // 0.2 is the minimum scale allowed
 
     // redraw circles to visualize the new scaling
     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
