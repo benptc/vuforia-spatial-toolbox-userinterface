@@ -1247,14 +1247,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             var finalOffsetX = positionData.x;
             var finalOffsetY = positionData.y;
 
-            var nodeScaleMultiplier = 1.0; // default to normal scale
+            // by default (for frames of scale = 1) an html body width of 1000px = 1m
+            let pixelsPerMeter = 1000;
             if (activeType !== 'ui') {
-                nodeScaleMultiplier = 2.0; // fixes most nodes being too small relative to tools
-                if (this.activeObject.isAnchor) {
-                    nodeScaleMultiplier *= 0.3; // nodes on anchors should have 1/3 scale
-                }
+                // nodes should be smaller, so an html body width of 4000px = 1m (160px = 4cm)
+                pixelsPerMeter = 4000;
             }
-            var finalScale = positionData.scale * globalScaleAdjustment * nodeScaleMultiplier;
+
+            let contentScaleMultiplier = 1000 / pixelsPerMeter;
+            var finalScale = positionData.scale * globalScaleAdjustment * contentScaleMultiplier;
 
             // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
             
