@@ -140,6 +140,10 @@ realityEditor.app.getScreenshot = function(size, callBack) {
     this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
+realityEditor.app.subscribeToScreenshots = function(size, callBack) {
+    this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
 /**
  * Debug method that gets the camera background, decodes it, and passes the blob url to a callback.
  * note - not used anywhere right now
