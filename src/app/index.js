@@ -141,7 +141,7 @@ realityEditor.app.getScreenshot = function(size, callBack) {
 };
 
 realityEditor.app.subscribeToScreenshots = function(size, callBack) {
-    this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    this.appFunctionCall('subscribeToScreenshots', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**
