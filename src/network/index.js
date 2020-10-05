@@ -1504,8 +1504,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
             node.type = msgContent.createNode.nodeType;
         }
         
-        node.scale *= newNodeScaleFactor;
-        
         thisFrame.nodes[nodeKey] = node;
         //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
@@ -1739,7 +1737,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (typeof nodeData.scaleFactor !== 'undefined') {
                 newNode.scale = nodeData.scaleFactor;
             }
-            newNode.scale *= newNodeScaleFactor;
             if (typeof nodeData.defaultValue !== 'undefined') {
                 newNode.data.value = nodeData.defaultValue;
             }
