@@ -45,8 +45,8 @@ createNameSpace("realityEditor.avatar.draw");
             iconContainer.removeChild(iconContainer.lastChild);
         }
 
-        if (Object.keys(connectedAvatars).length < 2) {
-            return; // don't show my icon unless there is at least one other user connected
+        if (Object.keys(connectedAvatars).length < 1) {
+            return; // don't show icons unless there is at least one user connected
         }
 
         let sortedKeys = realityEditor.avatar.utils.sortAvatarList(connectedAvatars);
