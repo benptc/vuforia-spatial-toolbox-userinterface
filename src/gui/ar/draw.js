@@ -1331,6 +1331,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (sendMatrices.groundPlane === true) {
                         thisMsg.groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+                        // console.log('%cdraw gp API: ' + window.prettyPrintMatrix(thisMsg.groundPlaneMatrix, 2), 'color: pink;');
+                        let newCalcMatrix = realityEditor.gui.threejsScene.getThreeGroundPlaneModelViewMatrix();
+                        
+                        console.log('%cdraw three mat API: ' + window.prettyPrintMatrix(newCalcMatrix.elements, 2), 'color: pink;');
+
                         thisMsg.floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
                     }
 

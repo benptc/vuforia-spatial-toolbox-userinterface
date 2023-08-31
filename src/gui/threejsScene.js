@@ -140,12 +140,45 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     }
 
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
-    function setCameraPosition(matrix) {
+    function setCameraPosition(matrix, print) {
         setMatrixFromArray(camera.matrix, matrix);
+        camera.updateMatrixWorld(true);
+        if (print) {
+            // console.log('%cgpThree world matrix: ' + window.prettyPrintMatrix(threejsContainerObj.matrixWorld.elements, 1), 'color: blue;');
+            // let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+            // console.log('%cgp-Node world matrix: ' + window.prettyPrintMatrix(groundPlaneNode.worldMatrix, 1), 'color: yellow;');
+
+            const modelViewMatrix = new THREE.Matrix4();
+            modelViewMatrix.multiplyMatrices(
+                camera.matrixWorldInverse,
+                threejsContainerObj.matrixWorld
+            );
+
+            console.log('%cgpThreMVMat matrix: ' + window.prettyPrintMatrix(modelViewMatrix.elements, 2), 'color: yellow;');
+            // console.log('%cgpNodeMVMat matrix: ' + window.prettyPrintMatrix(realityEditor.sceneGraph.getGroundPlaneModelViewMatrix(), 2), 'color: yellow;');
+
+            // console.log('%ccam--Three world matrix: ' + window.prettyPrintMatrix(camera.matrixWorld.elements, 1), 'color: green;');
+        }
         if (customMaterials) {
             let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
             customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
         }
+        
+        // renderScene();
+    }
+    
+    // let count = 500;
+    exports.getThreeGroundPlaneModelViewMatrix = () => {
+        // count--;
+        // if (count > 0) return;
+        if (!camera || !threejsContainerObj) return;
+        const modelViewMatrix = new THREE.Matrix4();
+        modelViewMatrix.multiplyMatrices(
+            camera.matrixWorldInverse,
+            threejsContainerObj.matrixWorld
+        );
+        
+        return modelViewMatrix;
     }
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target

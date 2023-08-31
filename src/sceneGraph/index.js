@@ -153,12 +153,27 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
-    function setCameraPosition(cameraMatrix) {
+    function setCameraPosition(cameraMatrix, print) {
         if (!cameraNode) { return; }
         cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {
-            realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix);
+            realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix, print);
         }
+        
+        if (print) {
+            // console.log('%ccameraNode world matrix: ' + window.prettyPrintMatrix(cameraNode.worldMatrix, 1), 'color: red;');
+            console.log('---');
+        }
+    }
+
+    window.prettyPrintMatrix = (matrix, precision) => {
+        if (!matrix || !matrix[0]) return '';
+        return '[ ' +
+            matrix[0].toFixed(precision) + ', ' + matrix[1].toFixed(precision) + ', ' + matrix[2].toFixed(precision) + ', ' + matrix[3].toFixed(precision) +
+            matrix[4].toFixed(precision) + ', ' + matrix[5].toFixed(precision) + ', ' + matrix[6].toFixed(precision) + ', ' + matrix[7].toFixed(precision) +
+            matrix[8].toFixed(precision) + ', ' + matrix[9].toFixed(precision) + ', ' + matrix[10].toFixed(precision) + ', ' + matrix[11].toFixed(precision) +
+            matrix[12].toFixed(precision) + ', ' + matrix[13].toFixed(precision) + ', ' + matrix[14].toFixed(precision) + ', ' + matrix[15].toFixed(precision) +
+            ']';
     }
 
     // this is the true position of the device, even if we are in VR mode
@@ -168,8 +183,8 @@ createNameSpace("realityEditor.sceneGraph");
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {
-        groundPlaneNode.setLocalMatrix(groundPlaneMatrix);
-        groundPlaneNode.updateWorldMatrix(); // immediately process instead of waiting for next frame
+        groundPlaneNode.setLocalMatrix(groundPlaneMatrix, { recomputeImmediately: true });
+        // groundPlaneNode.updateWorldMatrix(); // immediately process instead of waiting for next frame
     }
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)
@@ -211,7 +226,7 @@ createNameSpace("realityEditor.sceneGraph");
         // update ground plane first, in case frames/nodes/etc are relative to it
         if (didCameraUpdate || groundPlaneNode.needsRerender) {
             relativeToCamera[NAMES.GROUNDPLANE] = groundPlaneNode.getMatrixRelativeTo(cameraNode);
-            groundPlaneNode.needsRerender = false;
+            // groundPlaneNode.needsRerender = false;
             // TODO: if anything can become a child of the groundPlane then we'll need to process its subtree correctly
         }
 
@@ -245,7 +260,7 @@ createNameSpace("realityEditor.sceneGraph");
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
                 finalCSSMatrices[objectKey] = [];
                 utils.multiplyMatrix(relativeToCamera[objectKey], globalStates.projectionMatrix, finalCSSMatrices[objectKey]);
-                objectSceneNode.needsRerender = false;
+                // objectSceneNode.needsRerender = false;
             }
 
             // skip this object if neither it or the camera have changed
@@ -267,13 +282,13 @@ createNameSpace("realityEditor.sceneGraph");
                         utils.copyMatrixInPlace(animatedFinalMatrix, relativeToCamera[frameKey]);
                         frameSceneNode.needsRerender = true;
                     } else {
-                        frameSceneNode.needsRerender = false;
+                        // frameSceneNode.needsRerender = false;
                     }
 
                     finalCSSMatrices[frameKey] = [];
                     utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatrices[frameKey]);
 
-                    frameSceneNode.needsRerender = false;
+                    // frameSceneNode.needsRerender = false;
                 }
 
                 // skip this frame if neither it or the camera have changed
@@ -296,7 +311,7 @@ createNameSpace("realityEditor.sceneGraph");
                             utils.copyMatrixInPlace(animatedFinalMatrix, relativeToCamera[nodeKey]);
                             frameSceneNode.needsRerender = true;
                         } else {
-                            frameSceneNode.needsRerender = false;
+                            // frameSceneNode.needsRerender = false;
                         }
                         
                         finalCSSMatrices[nodeKey] = [];
@@ -305,16 +320,16 @@ createNameSpace("realityEditor.sceneGraph");
                         // TODO: what to do about this? is this really needed? maybe only compute when needed
                         // finalCSSMatricesWithoutTransform[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[nodeKey]);
 
-                        nodeSceneNode.needsRerender = false;
+                        // nodeSceneNode.needsRerender = false;
                     }
 
-                    nodeSceneNode.anythingInSubtreeNeedsRerender = false;
+                    // nodeSceneNode.anythingInSubtreeNeedsRerender = false;
                 });
 
-                frameSceneNode.anythingInSubtreeNeedsRerender = false;
+                // frameSceneNode.anythingInSubtreeNeedsRerender = false;
             });
 
-            objectSceneNode.anythingInSubtreeNeedsRerender = false;
+            // objectSceneNode.anythingInSubtreeNeedsRerender = false;
         });
 
         if (cameraNode.anythingInSubtreeNeedsRerender) {
@@ -322,9 +337,9 @@ createNameSpace("realityEditor.sceneGraph");
                 relativeToCamera[childNode.id] = childNode.getMatrixRelativeTo(cameraNode);
                 finalCSSMatrices[childNode.id] = [];
                 utils.multiplyMatrix(relativeToCamera[childNode.id], globalStates.projectionMatrix, finalCSSMatrices[childNode.id]);
-                childNode.needsRerender = false;
+                // childNode.needsRerender = false;
             });
-            cameraNode.anythingInSubtreeNeedsRerender = false;
+            // cameraNode.anythingInSubtreeNeedsRerender = false;
         }
 
         // process additional visual elements at the end, in case they are relative to groundPlane/frames/nodes
@@ -334,11 +349,11 @@ createNameSpace("realityEditor.sceneGraph");
                 relativeToCamera[elementId] = miscellaneousElementNode.getMatrixRelativeTo(cameraNode);
                 finalCSSMatrices[elementId] = [];
                 utils.multiplyMatrix(relativeToCamera[elementId], globalStates.projectionMatrix, finalCSSMatrices[elementId]);
-                miscellaneousElementNode.needsRerender = false;
+                // miscellaneousElementNode.needsRerender = false;
             }
         }
 
-        cameraNode.needsRerender = false;
+        // cameraNode.needsRerender = false;
     }
 
     function getCSSMatrix(activeKey) {
@@ -435,7 +450,10 @@ createNameSpace("realityEditor.sceneGraph");
     }
 
     function getModelViewMatrix(activeKey) {
-        return relativeToCamera[activeKey];
+        let sceneNode = getSceneNodeById(activeKey);
+        if (!sceneNode) return null;
+        return sceneNode.getMatrixRelativeTo(cameraNode); // recompute each time
+        // return relativeToCamera[activeKey];
     }
 
     function getGroundPlaneModelViewMatrix() {
@@ -443,6 +461,7 @@ createNameSpace("realityEditor.sceneGraph");
         if (gpRX) {
             return gpRX.getMatrixRelativeTo(cameraNode);
         }
+        relativeToCamera[NAMES.GROUNDPLANE] = groundPlaneNode.getMatrixRelativeTo(cameraNode); // update the stored matrix immediately
         return relativeToCamera[NAMES.GROUNDPLANE];
     }
 
@@ -763,7 +782,11 @@ createNameSpace("realityEditor.sceneGraph");
         // processed by one of the recursive calls above because .needsRecompute gets reset
         for (let elementId in visualElements) {
             let visualElementNode = visualElements[elementId];
-            visualElementNode.updateWorldMatrix();
+            if (visualElementNode.parent) {
+                visualElementNode.updateWorldMatrix(visualElementNode.parent.worldMatrix);
+            } else {
+                visualElementNode.updateWorldMatrix();
+            }
         }
     }
 
