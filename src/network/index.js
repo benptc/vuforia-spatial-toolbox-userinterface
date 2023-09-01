@@ -1401,6 +1401,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 }
             }
         }
+        if (msgContent.sendMatrices.anchoredModel === true && msgContent.sendMatrices.view === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.anchoredModel = msgContent.sendMatrices.anchoredModel;
+                tempThisObject.sendMatrices.view = msgContent.sendMatrices.view;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                if (activeKey === msgContent.frame) {
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
+            }
+        }
         if (msgContent.sendMatrices.groundPlane === true) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};

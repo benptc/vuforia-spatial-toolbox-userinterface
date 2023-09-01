@@ -61,6 +61,13 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         return null;
     }
 
+    function getModelMatrix(vehicleId) {
+        if (knownAnchorNodes[vehicleId]) {
+            return realityEditor.sceneGraph.getSceneNodeById(knownAnchorNodes[vehicleId].id).worldMatrix;
+        }
+        return null;
+    }
+
     function update(visibleObjects) {
         for (let objectKey in visibleObjects) {
             let object = realityEditor.getObject(objectKey);
@@ -276,6 +283,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
 
     exports.initService = initService;
     exports.getMatrix = getMatrix;
+    exports.getModelMatrix = getModelMatrix;
     exports.sceneNodeAdded = sceneNodeAdded;
     exports.togglePositioningMode = togglePositioningMode;
 }(realityEditor.gui.ar.groundPlaneAnchors));

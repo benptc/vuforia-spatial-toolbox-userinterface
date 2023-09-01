@@ -1300,7 +1300,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 let sendMatrices = activeVehicle.sendMatrices;
                 if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition ||
                     activeVehicle.sendPositionInWorld || activeVehicle.sendDeviceDistance || activeVehicle.sendObjectPositions ||
-                    sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.anchoredModelView || sendMatrices.allObjects || sendMatrices.model || sendMatrices.view)) {
+                    sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.anchoredModelView ||sendMatrices.allObjects || sendMatrices.model || sendMatrices.anchoredModel || sendMatrices.view)) {
 
                     var thisMsg = {};
 
@@ -1321,6 +1321,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                         thisMsg.modelMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).worldMatrix;
                     }
 
+                    if (sendMatrices.anchoredModel === true) {
+                        thisMsg.anchoredModelMatrix = realityEditor.gui.ar.groundPlaneAnchors.getModelMatrix(activeVehicle.uuid)
+                        // thisMsg.anchoredModelMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).worldMatrix;
+                    }
+
                     if (sendMatrices.view === true) {
                         thisMsg.viewMatrix = realityEditor.sceneGraph.getViewMatrix();
                     }
@@ -1334,8 +1339,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                         // console.log('%cdraw gp API: ' + window.prettyPrintMatrix(thisMsg.groundPlaneMatrix, 2), 'color: pink;');
                         let newCalcMatrix = realityEditor.gui.threejsScene.getThreeGroundPlaneModelViewMatrix();
                         
-                        console.log('%cdraw three mat API: ' + window.prettyPrintMatrix(newCalcMatrix.elements, 2), 'color: pink;');
+                        // console.log('%cdraw three mat API: ' + window.prettyPrintMatrix(newCalcMatrix.elements, 2), 'color: pink;');
 
+                        thisMsg.groundPlaneMatrix = newCalcMatrix.elements; //realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
                         thisMsg.floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
                     }
 
