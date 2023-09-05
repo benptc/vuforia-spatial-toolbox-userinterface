@@ -43,6 +43,10 @@ createNameSpace("realityEditor.network.frameContentAPI");
         if (!frame) return;
         if (!frame.sendCoordinateSystems) return;
         // console.log(`send coordinate systems to ${frameKey}`, frame.sendCoordinateSystems);
+
+        if (typeof lastSentMatrices[frameKey] === 'undefined') {
+            lastSentMatrices[frameKey] = {};
+        }
         
         let sendCamera = frame.sendCoordinateSystems.camera;
         let sendGroundPlaneOrigin = frame.sendCoordinateSystems.groundPlaneOrigin;
@@ -57,28 +61,27 @@ createNameSpace("realityEditor.network.frameContentAPI");
         if (sendCamera) {
             coordinateSystems.camera = realityEditor.sceneGraph.getCameraNode().worldMatrix;
         }
-        if (sendGroundPlaneOrigin) {
-            coordinateSystems.groundPlaneOrigin = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
-        }
         if (sendProjectionMatrix) {
             coordinateSystems.projectionMatrix = globalStates.realProjectionMatrix;
-        }
-        if (sendToolGroundPlaneShadow) {
-            coordinateSystems.toolGroundPlaneShadow = realityEditor.gui.threejsScene.getToolGroundPlaneShadowMatrix(objectKey, frameKey);
         }
         if (sendToolOrigin) {
             coordinateSystems.toolOrigin = realityEditor.sceneGraph.getSceneNodeById(frameKey).worldMatrix;
         }
-        if (sendToolSurfaceShadow) {
-            coordinateSystems.toolSurfaceShadow = realityEditor.gui.threejsScene.getToolSurfaceShadowMatrix(objectKey, frameKey);
+        if (sendGroundPlaneOrigin) {
+            coordinateSystems.groundPlaneOrigin = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         }
         if (sendWorldOrigin) {
             coordinateSystems.worldOrigin = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()).worldMatrix;
         }
         
-        // TODO: only send in matrices that have changed since the last time they were sent in
-        if (typeof lastSentMatrices[frameKey] === 'undefined') {
-            lastSentMatrices[frameKey] = {};
+        if (!lastSentMatrices[frameKey].toolOrigin || lastSentMatrices[frameKey].toolOrigin !== matrixChecksum(coordinateSystems.toolOrigin)) {
+            // only calculate the more complex ones if the tool origin has also changed
+            if (sendToolGroundPlaneShadow) {
+                coordinateSystems.toolGroundPlaneShadow = realityEditor.gui.threejsScene.getToolGroundPlaneShadowMatrix(objectKey, frameKey);
+            }
+            if (sendToolSurfaceShadow) {
+                coordinateSystems.toolSurfaceShadow = realityEditor.gui.threejsScene.getToolSurfaceShadowMatrix(objectKey, frameKey);
+            }
         }
 
         let keysThatDidntChange = [];
@@ -94,7 +97,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
         });
         
         if (Object.keys(coordinateSystems).length === 0) return;
-        console.log('changes:', coordinateSystems);
+        // console.log('changes:', coordinateSystems);
 
         globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify({
             coordinateSystems: coordinateSystems
