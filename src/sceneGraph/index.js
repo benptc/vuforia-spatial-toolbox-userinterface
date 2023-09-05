@@ -162,7 +162,7 @@ createNameSpace("realityEditor.sceneGraph");
         
         if (print) {
             // console.log('%ccameraNode world matrix: ' + window.prettyPrintMatrix(cameraNode.worldMatrix, 1), 'color: red;');
-            console.log('---');
+            // console.log('---');
         }
     }
 

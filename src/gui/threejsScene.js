@@ -154,7 +154,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 threejsContainerObj.matrixWorld
             );
 
-            console.log('%cgpThreMVMat matrix: ' + window.prettyPrintMatrix(modelViewMatrix.elements, 2), 'color: yellow;');
+            // console.log('%cgpThreMVMat matrix: ' + window.prettyPrintMatrix(modelViewMatrix.elements, 2), 'color: yellow;');
             // console.log('%cgpNodeMVMat matrix: ' + window.prettyPrintMatrix(realityEditor.sceneGraph.getGroundPlaneModelViewMatrix(), 2), 'color: yellow;');
 
             // console.log('%ccam--Three world matrix: ' + window.prettyPrintMatrix(camera.matrixWorld.elements, 1), 'color: green;');
@@ -704,6 +704,87 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         return groundPlaneCollider;
     }
 
+    // TODO: implement this without relying on worldOcclusionObject, so that it can be used as a backup method
+    function getToolGroundPlaneShadowMatrix(objectKey, frameKey) {
+        let worldId = realityEditor.sceneGraph.getWorldId();
+        let worldOcclusionObject = getObjectForWorldRaycasts(worldId);
+        let surfaceMatrix = getMatrixProjectedOntoObject(objectKey, frameKey, worldOcclusionObject);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        surfaceMatrix[13] = groundPlaneNode.worldMatrix[13];
+        return surfaceMatrix;
+    }
+
+    function getToolSurfaceShadowMatrix(objectKey, frameKey) {
+        let worldId = realityEditor.sceneGraph.getWorldId();
+        let worldOcclusionObject = getObjectForWorldRaycasts(worldId);
+        return getMatrixProjectedOntoObject(objectKey, frameKey, worldOcclusionObject);
+    }
+
+    function getMatrixProjectedOntoObject(objectKey, frameKey, collisionObject) {
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
+        if (!frame || !sceneNode) return [];
+
+        if (!collisionObject) return sceneNode.worldMatrix;
+
+        // let toolPosition = realityEditor.sceneGraph.getWorldPosition(frameKey);
+        let toolMatrixGP = sceneNode.getMatrixRelativeTo(realityEditor.sceneGraph.getGroundPlaneNode());
+        let toolPosition = new THREE.Vector3(toolMatrixGP[12], toolMatrixGP[13], toolMatrixGP[14]);
+
+        const raycaster = new THREE.Raycaster();
+        const direction = new THREE.Vector3(0, -1, 0); // Pointing downwards along Y-axis
+
+        // Set raycaster
+        raycaster.set(toolPosition, direction);
+        raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
+
+        // add object layer to raycast layer mask
+        raycaster.layers.mask = raycaster.layers.mask | collisionObject.layers.mask;
+
+        // Find intersections
+        const intersects = raycaster.intersectObject(collisionObject);
+
+        if (intersects.length > 0) {
+            const shadowPosition = intersects[0].point;
+            let shadowMatrix = realityEditor.gui.ar.utilities.copyMatrix(sceneNode.worldMatrix);
+            shadowMatrix[12] = shadowPosition.x;
+            shadowMatrix[13] = shadowPosition.y;
+            shadowMatrix[14] = shadowPosition.z;
+
+            return realignUpVector(shadowMatrix);
+        }
+
+        return sceneNode.worldMatrix;
+    }
+    
+    // removes rotation except along the Y axis, so it stays "flat" on the ground plane
+    function realignUpVector(originalMatrix) {
+        let matrix = new THREE.Matrix4();
+        setMatrixFromArray(matrix, originalMatrix);
+
+        // Decompose the matrix into position, rotation, and scale
+        const position = new THREE.Vector3();
+        const rotation = new THREE.Quaternion();
+        const scale = new THREE.Vector3();
+
+        matrix.decompose(position, rotation, scale);
+
+        // Convert Quaternion to Euler to easily zero out X and Z rotations
+        const euler = new THREE.Euler().setFromQuaternion(rotation, 'XYZ');
+
+        // Zero out X and Z rotations
+        euler.x = 0;
+        euler.z = 0;
+
+        // Convert back to Quaternion from Euler
+        rotation.setFromEuler(euler);
+
+        // Recompose the matrix
+        matrix.compose(position, rotation, scale);
+        
+        return matrix.elements;
+    }
+
     /**
      * Helper function to create a new ViewFrustum instance with preset camera internals
      * @returns {ViewFrustum}
@@ -1124,6 +1205,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
+    exports.getToolGroundPlaneShadowMatrix = getToolGroundPlaneShadowMatrix;
+    exports.getToolSurfaceShadowMatrix = getToolSurfaceShadowMatrix;
     exports.addTransformControlsTo = addTransformControlsTo;
     exports.toggleDisplayOriginBoxes = toggleDisplayOriginBoxes;
     exports.updateMaterialCullingFrustum = updateMaterialCullingFrustum;

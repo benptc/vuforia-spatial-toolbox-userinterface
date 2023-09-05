@@ -1297,6 +1297,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             }
             
             if (activeType === "ui") {
+                
+                realityEditor.network.frameContentAPI.sendCoordinateSystemsToIFrame(activeVehicle.objectId, activeVehicle.uuid);
+                
                 let sendMatrices = activeVehicle.sendMatrices;
                 if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition ||
                     activeVehicle.sendPositionInWorld || activeVehicle.sendDeviceDistance || activeVehicle.sendObjectPositions ||

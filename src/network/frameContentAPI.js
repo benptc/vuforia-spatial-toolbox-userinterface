@@ -8,6 +8,8 @@ createNameSpace("realityEditor.network.frameContentAPI");
 
 (function(exports) {
     
+    let lastSentMatrices = {};
+    
     /**
      * Public init method sets up module by registering callbacks when important events happen in other modules
      */
@@ -23,6 +25,88 @@ createNameSpace("realityEditor.network.frameContentAPI");
         realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected);
 
         realityEditor.sceneGraph.network.onObjectLocalized(worldIdUpdated);
+        
+        setupInternalPostMessageListeners();
+    }
+    
+    function setupInternalPostMessageListeners() {
+        realityEditor.network.addPostMessageHandler('sendCoordinateSystems', (msgContent, fullMessage) => {
+            let frame = realityEditor.getFrame(fullMessage.object, fullMessage.frame);
+            if (!frame) return;
+            frame.sendCoordinateSystems = msgContent;
+            console.log('frame was told to send coordinate systems', frame.sendCoordinateSystems);
+        });
+    }
+    
+    function sendCoordinateSystemsToIFrame(objectKey, frameKey) {
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        if (!frame) return;
+        if (!frame.sendCoordinateSystems) return;
+        // console.log(`send coordinate systems to ${frameKey}`, frame.sendCoordinateSystems);
+        
+        let sendCamera = frame.sendCoordinateSystems.camera;
+        let sendGroundPlaneOrigin = frame.sendCoordinateSystems.groundPlaneOrigin;
+        let sendProjectionMatrix = frame.sendCoordinateSystems.projectionMatrix;
+        let sendToolGroundPlaneShadow = frame.sendCoordinateSystems.toolGroundPlaneShadow;
+        let sendToolOrigin = frame.sendCoordinateSystems.toolOrigin;
+        let sendToolSurfaceShadow = frame.sendCoordinateSystems.toolSurfaceShadow;
+        let sendWorldOrigin = frame.sendCoordinateSystems.worldOrigin;
+        
+        let coordinateSystems = {};
+        
+        if (sendCamera) {
+            coordinateSystems.camera = realityEditor.sceneGraph.getCameraNode().worldMatrix;
+        }
+        if (sendGroundPlaneOrigin) {
+            coordinateSystems.groundPlaneOrigin = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+        }
+        if (sendProjectionMatrix) {
+            coordinateSystems.projectionMatrix = globalStates.realProjectionMatrix;
+        }
+        if (sendToolGroundPlaneShadow) {
+            coordinateSystems.toolGroundPlaneShadow = realityEditor.gui.threejsScene.getToolGroundPlaneShadowMatrix(objectKey, frameKey);
+        }
+        if (sendToolOrigin) {
+            coordinateSystems.toolOrigin = realityEditor.sceneGraph.getSceneNodeById(frameKey).worldMatrix;
+        }
+        if (sendToolSurfaceShadow) {
+            coordinateSystems.toolSurfaceShadow = realityEditor.gui.threejsScene.getToolSurfaceShadowMatrix(objectKey, frameKey);
+        }
+        if (sendWorldOrigin) {
+            coordinateSystems.worldOrigin = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()).worldMatrix;
+        }
+        
+        // TODO: only send in matrices that have changed since the last time they were sent in
+        if (typeof lastSentMatrices[frameKey] === 'undefined') {
+            lastSentMatrices[frameKey] = {};
+        }
+
+        let keysThatDidntChange = [];
+        Object.keys(coordinateSystems).forEach(coordSystem => {
+            let checksum = matrixChecksum(coordinateSystems[coordSystem]);
+            if (lastSentMatrices[frameKey][coordSystem] && lastSentMatrices[frameKey][coordSystem] === checksum) {
+                keysThatDidntChange.push(coordSystem);
+            }
+        });
+        
+        keysThatDidntChange.forEach(key => {
+            delete coordinateSystems[key];
+        });
+        
+        if (Object.keys(coordinateSystems).length === 0) return;
+        console.log('changes:', coordinateSystems);
+
+        globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify({
+            coordinateSystems: coordinateSystems
+        }), '*');
+
+        Object.keys(coordinateSystems).forEach(coordSystem => {
+            lastSentMatrices[frameKey][coordSystem] = matrixChecksum(coordinateSystems[coordSystem]);
+        });
+    }
+    
+    function matrixChecksum(matrix) {
+        return matrix.reduce((acc, val) => acc + val, 0);
     }
 
     /**
@@ -149,5 +233,6 @@ createNameSpace("realityEditor.network.frameContentAPI");
 
     exports.initService = initService;
     exports.getMutablePointerEventCopy = getMutablePointerEventCopy;
+    exports.sendCoordinateSystemsToIFrame = sendCoordinateSystemsToIFrame;
 
 })(realityEditor.network.frameContentAPI);
