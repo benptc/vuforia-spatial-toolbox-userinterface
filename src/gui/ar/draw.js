@@ -279,7 +279,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
     if (!realityEditor.gui.ar.draw.frameNeedsToBeRendered) { return; } // don't recompute multiple times between a single animation frames
     realityEditor.gui.ar.draw.frameNeedsToBeRendered = false; // gets set back to true by requestAnimationFrame code
-    
+
+    realityEditor.device.profiling.startTimeProcess(`gui/ar/draw:update`);
+
     var objectKey;
     var frameKey;
     var nodeKey;
@@ -661,6 +663,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         // services that subscribe to this are responsible to not mutate this object.
         callback(realityEditor.gui.ar.draw.visibleObjects);
     });
+
+    realityEditor.device.profiling.stopTimeProcess('gui/ar/draw:update', 'update', { showMessage: false, showAggregate: true });
 };
 
 realityEditor.gui.ar.draw.closestObjectListeners = [];

@@ -449,10 +449,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                     if (!gltf.scene.material) {
                         console.warn('no material', gltf.scene);
                     } else {
+                        // TODO: to re-enable frustum culling on desktop, add this: if (!realityEditor.device.environment.isDesktop())
+                        //  so that we don't swap to the original material on desktop. also need to update desktopRenderer.js
                         // cache the original gltf material on mobile browsers, to improve performance
-                        if (!realityEditor.device.environment.isDesktop()) {
-                            gltf.scene.originalMaterial = gltf.scene.material.clone();
-                        }
+                        // if (!realityEditor.device.environment.isDesktop()) {
+                        gltf.scene.originalMaterial = gltf.scene.material.clone();
+                        // }
                         gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
                             maxHeight: maxHeight,
                             center: center,

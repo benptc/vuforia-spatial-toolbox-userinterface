@@ -42,7 +42,10 @@ createNameSpace("realityEditor.network.frameContentAPI");
         });
 
         realityEditor.network.addPostMessageHandler('stopTimeProcess', (msgContent, fullMessage) => {
-            realityEditor.device.profiling.stopTimeProcess(msgContent.name, msgContent.category);
+            let showMessage = msgContent.showMessage || false;
+            let showAggregate = msgContent.showAggregate || true;
+            let displayTimeout = msgContent.displayTimeout || 3000;
+            realityEditor.device.profiling.stopTimeProcess(msgContent.name, msgContent.category, { showMessage, showAggregate, displayTimeout });
         });
     }
     

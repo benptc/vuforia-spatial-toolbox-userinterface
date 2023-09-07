@@ -1,13 +1,19 @@
 createNameSpace("realityEditor.device.profiling");
 
-import {DebugUI} from '../gui/debugUI.js';
+import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
 
 (function(exports) {
-    let debugUI = null;
-    let activated = false;
+    let isShown = false;
+    let isActivated = false;
+    let profilerSettingsUI = null;
+
+    let processTimes = {};
+    let processCategories = {};
+    let lastUpdateTimes = {};
+    let displayCooldowns = {};
 
     function initService() {
-        // debugUI = new DebugUI(document.body);
+        console.log('init profiling');
     }
 
     // computes the FNV-1a hash of a string - useful as a UUID for a stringified matrix
@@ -20,35 +26,149 @@ import {DebugUI} from '../gui/debugUI.js';
         return (hash & 0xFFFFFFFFn).toString(16).padStart(8, '0');
     }
 
-    function startTimeProcess(processTitle, options = null) {
-        if (!activated) return;
-        if (!debugUI) return;
-        debugUI.startTimeProcess(processTitle, options);
+    function startTimeProcess(processTitle, options = {}) {
+        if (!isShown) return;
+        if (!isActivated) return;
+
+        if (typeof processTimes[processTitle] === 'undefined') {
+            processTimes[processTitle] = {};
+        }
+        processTimes[processTitle].start = performance.now();
+        if (options.numStopsRequired) {
+            processTimes[processTitle].numStopsRequired = options.numStopsRequired;
+            processTimes[processTitle].numStopsAccumulated = 0;
+        }
     }
 
-    function stopTimeProcess(processTitle, category) {
-        if (!activated) return;
-        if (!debugUI) return;
-        debugUI.stopTimeProcess(processTitle, category);
-    }
-    
-    function activate() {
-        activated = true;
-        if (!debugUI) {
-            debugUI = new DebugUI(document.body);
+    function stopTimeProcess(processTitle, category, options = { showMessage: false, showAggregate: false, displayTimeout: 3000}) {
+        if (!isShown) return;
+        if (!isActivated) return;
+        if (!profilerSettingsUI) return;
+
+        let process = processTimes[processTitle];
+        if (typeof process === 'undefined') {
+            return;
         }
-        debugUI.show();
+
+        if (typeof processTimes[processTitle].numStopsRequired !== 'undefined') {
+            processTimes[processTitle].numStopsAccumulated += 1;
+            if (processTimes[processTitle].numStopsAccumulated < processTimes[processTitle].numStopsRequired) {
+                return; // wait until we receive enough stops
+            }
+        }
+
+        process.end = performance.now();
+
+        let timeBetweenCategoryUpdates = process.end - (lastUpdateTimes[category] || 0);
+        // console.log('time between updates', timeBetweenCategoryUpdates);
+        lastUpdateTimes[processTitle] = performance.now();
+
+        if (category) {
+            lastUpdateTimes[category] = lastUpdateTimes[processTitle];
+        }
+
+        if (!process.start || !process.end) return;
+
+        let time = (process.end - process.start)
+        let displayTime = time.toFixed(2);
+        let numStopsText = processTimes[processTitle].numStopsAccumulated ? `(${processTimes[processTitle].numStopsAccumulated} stops)` : '';
+        let labelText = `${processTitle}: ${yellow(displayTime)} ms ${numStopsText}`;
+        if (options.showMessage) {
+            profilerSettingsUI.addOrUpdateLabel(processTitle, labelText);
+            // remove after 3 seconds if no updates between now and then
+            setTimeout(() => {
+                let timeSinceLastUpdate = performance.now() - lastUpdateTimes[processTitle];
+                if (timeSinceLastUpdate > (options.displayTimeout - 100)) {
+                    // console.log(`remove ${processTitle}`);
+                    profilerSettingsUI.removeLabel(processTitle);
+                }
+            }, options.displayTimeout);
+        }
+
+        if (!category) return;
+        if (!options.showAggregate) return;
+
+        updateCategory(category, time, timeBetweenCategoryUpdates);
     }
-    
+
+    // show aggregate mean/min/max times for recent tasks of this category
+    function updateCategory(category, time, timeBetweenCategoryUpdates) {
+        if (typeof processCategories[category] === 'undefined') {
+            processCategories[category] = {
+                fastest: time, // ignore the first datapoint so we don't throw off the average
+                slowest: time,
+                mean: time,
+                count: 1,
+                numDisplayResets: 0
+            };
+        } else if (timeBetweenCategoryUpdates > 5000) {
+            let numDisplayResets = processCategories[category].numDisplayResets + 1;
+            processCategories[category] = {
+                fastest: time,
+                slowest: time,
+                mean: time,
+                count: 1,
+                numDisplayResets: numDisplayResets
+            };
+        } else {
+            let prevCount = processCategories[category].count;
+            let prevMean = processCategories[category].mean;
+
+            processCategories[category].fastest = Math.min(processCategories[category].fastest, time);
+            processCategories[category].slowest = Math.max(processCategories[category].slowest, time);
+            processCategories[category].mean = (prevCount * prevMean + time) / (prevCount + 1); // update mean
+            processCategories[category].count += 1;
+        }
+
+        let count = processCategories[category].count;
+        let numResets = processCategories[category].numDisplayResets;
+        let meanT = processCategories[category].mean.toFixed(2);
+        let minT = processCategories[category].fastest.toFixed(2)
+        let maxT = processCategories[category].slowest.toFixed(2)
+        
+        if (typeof displayCooldowns[category] !== 'undefined' && displayCooldowns[category] > 0) {
+            displayCooldowns[category]--;
+            return;
+        } // don't slow down process by rendering too often
+        displayCooldowns[category] = 5;
+        let meanLabelText = `${category} (${count}) –– mean: ${yellow(meanT)} –– min: ${yellow(minT)} –– max: ${yellow(maxT)}`;
+        profilerSettingsUI.addOrUpdateLabel(`mean_${category}`, meanLabelText, { pinToTop: true });
+    }
+
+    function yellow(text) {
+        return `<span class='debugTime'>${text}</span>`;
+    }
+
+    function show() {
+        isShown = true;
+        if (!profilerSettingsUI) {
+            profilerSettingsUI = new ProfilerSettingsUI();
+        }
+        profilerSettingsUI.show();
+        profilerSettingsUI.setEnableMetrics(true);
+    }
+
+    function hide() {
+        isShown = false;
+        if (profilerSettingsUI) {
+            profilerSettingsUI.hide();
+        }
+    }
+
+    function activate() {
+        isActivated = true;
+    }
+
     function deactivate() {
-        activated = false;
-        debugUI.hide();
+        isActivated = false;
     }
 
     exports.initService = initService;
     exports.getShortHashForString = getShortHashForString;
     exports.startTimeProcess = startTimeProcess;
     exports.stopTimeProcess = stopTimeProcess;
+    exports.show = show;
+    exports.hide = hide;
     exports.activate = activate;
     exports.deactivate = deactivate;
 }(realityEditor.device.profiling));
