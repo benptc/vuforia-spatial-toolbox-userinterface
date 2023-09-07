@@ -153,8 +153,23 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
+    function countSubscribedFrames(data) {
+        return Object.values(data).reduce((acc, obj) => {
+            const enabledCount = Object.keys(obj.frames).reduce((frameAcc, frameKey) => {
+                return frameAcc + ((obj.frames[frameKey].sendCoordinateSystems && obj.frames[frameKey].sendCoordinateSystems.camera) ? 1 : 0);
+            }, 0);
+            return acc + enabledCount;
+        }, 0);
+    }
+
     function setCameraPosition(cameraMatrix, print) {
         if (!cameraNode) { return; }
+
+        let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
+        let numStopsRequired = countSubscribedFrames(objects);
+
+        realityEditor.device.profiling.startTimeProcess(`cameraUpdated__${hash}`, { numStopsRequired: numStopsRequired});
+
         cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {
             realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix, print);

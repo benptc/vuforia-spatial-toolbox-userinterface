@@ -2094,3 +2094,25 @@ Logic Interface CSS
     height: 100vh;
     z-index: -1;
 }
+
+.debugContainer {
+    position: absolute;
+    left: 10px;
+    top: 130px;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: white;
+    border: 2px solid white;
+    width: 500px;
+    height: 600px;
+    z-index: 1100;
+    transform: translateZ(1100px);
+    overflow: hidden;
+}
+
+.debugContainerRow {
+    
+}
+
+.debugTime {
+    color: yellow;
+}

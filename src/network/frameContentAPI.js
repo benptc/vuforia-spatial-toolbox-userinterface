@@ -36,6 +36,14 @@ createNameSpace("realityEditor.network.frameContentAPI");
             frame.sendCoordinateSystems = msgContent;
             console.log('frame was told to send coordinate systems', frame.sendCoordinateSystems);
         });
+
+        realityEditor.network.addPostMessageHandler('startTimeProcess', (msgContent, fullMessage) => {
+            realityEditor.device.profiling.startTimeProcess(msgContent.name);
+        });
+
+        realityEditor.network.addPostMessageHandler('stopTimeProcess', (msgContent, fullMessage) => {
+            realityEditor.device.profiling.stopTimeProcess(msgContent.name, msgContent.category);
+        });
     }
     
     function sendCoordinateSystemsToIFrame(objectKey, frameKey) {
@@ -48,6 +56,15 @@ createNameSpace("realityEditor.network.frameContentAPI");
             lastSentMatrices[frameKey] = {};
         }
         
+        const TIME_PROCESS = false;
+
+        let frameKeyWithoutObjectKey = frameKey.slice(objectKey.length);
+        let processTitle = `sendSystems::${frameKeyWithoutObjectKey}`;
+
+        if (TIME_PROCESS) {
+            realityEditor.device.profiling.startTimeProcess(processTitle);
+        }
+
         let sendCamera = frame.sendCoordinateSystems.camera;
         let sendGroundPlaneOrigin = frame.sendCoordinateSystems.groundPlaneOrigin;
         let sendProjectionMatrix = frame.sendCoordinateSystems.projectionMatrix;
@@ -99,6 +116,12 @@ createNameSpace("realityEditor.network.frameContentAPI");
         if (Object.keys(coordinateSystems).length === 0) return;
         // console.log('changes:', coordinateSystems);
 
+        // try {
+        //     coordinateSystems.timestamp = Date.now();
+        // } catch (e) {
+        //     console.warn(e);
+        // }
+
         globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify({
             coordinateSystems: coordinateSystems
         }), '*');
@@ -106,6 +129,20 @@ createNameSpace("realityEditor.network.frameContentAPI");
         Object.keys(coordinateSystems).forEach(coordSystem => {
             lastSentMatrices[frameKey][coordSystem] = matrixChecksum(coordinateSystems[coordSystem]);
         });
+
+        if (TIME_PROCESS) {
+            realityEditor.device.profiling.stopTimeProcess(processTitle);
+        }
+        
+        const END_BEFORE_SENDING_INTO_IFRAME = false;
+        if (END_BEFORE_SENDING_INTO_IFRAME) {
+            if (sendCamera && coordinateSystems.camera) {
+                // coordinateSystems.camera = realityEditor.sceneGraph.getCameraNode().worldMatrix;
+
+                let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(coordinateSystems.camera));
+                realityEditor.device.profiling.stopTimeProcess(`cameraUpdated__${hash}`);
+            }
+        }
     }
     
     function matrixChecksum(matrix) {
