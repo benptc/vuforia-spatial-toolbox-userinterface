@@ -276,10 +276,15 @@ realityEditor.device.onload = async function () {
             }
             cachedSettings = settings;
             if (anyChanged) {
-                document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                // document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                //     getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                //     getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+                // }), "*");
+                
+                window.postIntoIframe(document.getElementById("settingsIframe").contentWindow, JSON.stringify({
                     getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
                     getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-                }), "*");
+                }));
             }
         }, 1000);
     }

@@ -280,7 +280,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     if (!realityEditor.gui.ar.draw.frameNeedsToBeRendered) { return; } // don't recompute multiple times between a single animation frames
     realityEditor.gui.ar.draw.frameNeedsToBeRendered = false; // gets set back to true by requestAnimationFrame code
 
-    realityEditor.device.profiling.startTimeProcess(`gui/ar/draw:update`);
+    // realityEditor.device.profiling.startTimeProcess(`gui/ar/draw:update`);
 
     var objectKey;
     var frameKey;
@@ -664,7 +664,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         callback(realityEditor.gui.ar.draw.visibleObjects);
     });
 
-    realityEditor.device.profiling.stopTimeProcess('gui/ar/draw:update', 'update', { showMessage: false, showAggregate: true });
+    // realityEditor.device.profiling.stopTimeProcess('gui/ar/draw:update', 'update', { showMessage: false, showAggregate: true });
 };
 
 realityEditor.gui.ar.draw.closestObjectListeners = [];
@@ -1013,12 +1013,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             }
             
             if (activeType === 'ui') {
-                iFrame.contentWindow.postMessage(
-                    JSON.stringify(
-                        {
-                            visibility: "visible",
-                            interface: globalStates.interface
-                        }), '*');
+                // iFrame.contentWindow.postMessage(
+                //     JSON.stringify(
+                //         {
+                //             visibility: "visible",
+                //             interface: globalStates.interface
+                //         }), '*');
+                
+                window.postIntoIframe(iFrame.contentWindow, JSON.stringify(
+                    {
+                        visibility: "visible",
+                        interface: globalStates.interface
+                    }));
             }
 
             if (activeType === "logic" && objectKey !== "pocket") {
@@ -1302,6 +1308,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             
             if (activeType === "ui") {
                 
+                let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(realityEditor.sceneGraph.getCameraNode().worldMatrix));
+                let category = 'cameraReady(gui/ar/draw)';
+                realityEditor.device.profiling.stopTimeProcess(`cameraReady__${hash}`, category, { showMessage: false, showAggregate: true, displayTimeout: 1000 });
+
                 realityEditor.network.frameContentAPI.sendCoordinateSystemsToIFrame(activeVehicle.objectId, activeVehicle.uuid);
                 
                 let sendMatrices = activeVehicle.sendMatrices;
@@ -1399,9 +1409,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     if (typeof activeVehicle.sendObjectPositions !== 'undefined') {
                         thisMsg.objectPositions = realityEditor.gui.ar.positioning.getObjectPositionsOfTypes(activeVehicle.sendObjectPositions, true);
                     }
-                    
+
                     if (activeType === 'ui') {
-                        globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+                        // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+                        window.postIntoIframe(globalDOMCache["iframe" + activeKey].contentWindow, JSON.stringify(thisMsg));
                     }
 
                 }
@@ -1806,11 +1817,16 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
                 globalDOMCache['object' + activeKey].classList.add('displayNone');
             }
 
-            globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                JSON.stringify(
-                    {
-                        visibility: "hidden"
-                    }), '*');
+            // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+            //     JSON.stringify(
+            //         {
+            //             visibility: "hidden"
+            //         }), '*');
+            
+            window.postIntoIframe(globalDOMCache["iframe" + activeKey], JSON.stringify(
+                {
+                    visibility: "hidden"
+                }));
             
         } else {
             globalDOMCache['object' + activeKey].classList.remove('visibleNodeContainer');
@@ -2057,7 +2073,8 @@ realityEditor.gui.ar.draw.updateLogicNodeIcon = function(activeVehicle) {
     var logicIconSrc = realityEditor.gui.crafting.getLogicNodeIcon(activeVehicle);
     var nodeDom = globalDOMCache["iframe" + activeVehicle.uuid];
     if (nodeDom) {
-        nodeDom.contentWindow.postMessage( JSON.stringify({ iconImage: logicIconSrc }) , "*");
+        // nodeDom.contentWindow.postMessage( JSON.stringify({ iconImage: logicIconSrc }) , "*");
+        window.postIntoIframe(nodeDom.contentWindow, JSON.stringify({ iconImage: logicIconSrc }));
     }
 };
 

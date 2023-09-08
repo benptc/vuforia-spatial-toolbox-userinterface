@@ -372,9 +372,12 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     if (typeof worldIntersectPoint !== 'undefined') {
         eventData.worldIntersectPoint = worldIntersectPoint;
     }
-    iframe.contentWindow.postMessage(JSON.stringify({
+    // iframe.contentWindow.postMessage(JSON.stringify({
+    //     event: eventData
+    // }), '*');
+    window.postIntoIframe(iframe.contentWindow, JSON.stringify({
         event: eventData
-    }), '*');
+    }));
 };
 
 /**
@@ -568,9 +571,13 @@ realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameI
     var iframe = document.getElementById('iframe' + frameKey);
     if (!iframe) return;
     
-    iframe.contentWindow.postMessage(JSON.stringify({
+    // iframe.contentWindow.postMessage(JSON.stringify({
+    //     frameIsMoving: frameIsMoving
+    // }), '*');
+    
+    window.postIntoIframe(iframe.contentWindow, JSON.stringify({
         frameIsMoving: frameIsMoving
-    }), '*');
+    }));
 };
 
 /**
@@ -781,8 +788,10 @@ realityEditor.device.onElementTouchEnter = function(event) {
         }
 
         if (globalDOMCache["iframe" + target.nodeId]) {
-            globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
-                JSON.stringify( { uiActionFeedback: contentForFeedback }) , "*");
+            // globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
+            //     JSON.stringify( { uiActionFeedback: contentForFeedback }) , "*");
+            
+            window.postIntoIframe(globalDOMCache["iframe" + target.nodeId].contentWindow, JSON.stringify( { uiActionFeedback: contentForFeedback }));
         }
     }
 
@@ -817,8 +826,9 @@ realityEditor.device.onElementTouchOut = function(event) {
         overlayDiv.classList.remove('overlayAction');
 
         if (globalDOMCache["iframe" + target.nodeId]) {
-            globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
-                JSON.stringify( { uiActionFeedback: 1 }) , "*");
+            // globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
+            //     JSON.stringify( { uiActionFeedback: 1 }) , "*");
+            window.postIntoIframe(globalDOMCache["iframe" + target.nodeId].contentWindow, JSON.stringify( { uiActionFeedback: 1 }));
         }
     }
 

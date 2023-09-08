@@ -180,7 +180,8 @@ createNameSpace("realityEditor.network.realtime");
         // trigger secondary effects for certain properties
         if (msgContent.propertyPath === 'publicData') {
             if (globalDOMCache["iframe" + msgContent.frameKey]) {
-                globalDOMCache["iframe" + msgContent.frameKey].contentWindow.postMessage(JSON.stringify({reloadPublicData: true}), "*");
+                // globalDOMCache["iframe" + msgContent.frameKey].contentWindow.postMessage(JSON.stringify({reloadPublicData: true}), "*");
+                window.postIntoIframe(globalDOMCache["iframe" + msgContent.frameKey].contentWindow, JSON.stringify({reloadPublicData: true}));
             }
         }
     }

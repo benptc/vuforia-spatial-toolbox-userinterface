@@ -152,7 +152,8 @@ createNameSpace('realityEditor.device.layout');
                         height: window.innerHeight
                     }
                 };
-                iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
+                // iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
+                window.postIntoIframe(iframe.contentWindow, JSON.stringify(eventData));
             });
         });
     }

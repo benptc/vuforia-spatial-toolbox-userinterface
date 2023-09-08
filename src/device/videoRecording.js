@@ -271,7 +271,8 @@ createNameSpace("realityEditor.device.videoRecording");
         var thisMsg = {
             videoFilePath: realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/videos/' + videoId + '.mp4')
         };
-        globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+        // globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+        window.postIntoIframe(globalDOMCache["iframe" + frameKey].contentWindow, JSON.stringify(thisMsg));
     }
 
     //////////////////////////////////////////

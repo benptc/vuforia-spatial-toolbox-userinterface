@@ -492,10 +492,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
                 allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
+                        // TODO: to re-enable frustum culling on desktop, add this: if (!realityEditor.device.environment.isDesktop())
+                        //  so that we don't swap to the original material on desktop. also need to update desktopRenderer.js
                         // cache the original gltf material on mobile browsers, to improve performance
-                        if (!realityEditor.device.environment.isDesktop()) {
+                        // if (!realityEditor.device.environment.isDesktop()) {
                             child.originalMaterial = child.material.clone();
-                        }
+                        // }
                         child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
                             maxHeight: maxHeight,
                             center: center,
@@ -617,9 +619,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     function postHeightMapChangeEventIntoIframes(objectkey, framekey) {
         if (realityEditor.envelopeManager.getFrameTypeFromKey(objectkey, framekey) === 'spatialMeasure') {
             let iframe = document.getElementById('iframe' + framekey);
-            iframe.contentWindow.postMessage(JSON.stringify({
+            // iframe.contentWindow.postMessage(JSON.stringify({
+            //     isHeightMapOn: isHeightMapOn
+            // }), '*');
+            window.postIntoIframe(iframe.contentWindow, JSON.stringify({
                 isHeightMapOn: isHeightMapOn
-            }), '*');
+            }));
         }
     }
     

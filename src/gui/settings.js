@@ -352,9 +352,13 @@ realityEditor.gui.settings.hideSettings = function() {
     
 	globalStates.settingsButtonState = false;
 
-    document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+    // document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+    //     getSettings: this.generateGetSettingsJsonMessage()
+    // }), "*");
+    
+    window.postIntoIframe(document.getElementById("settingsIframe").contentWindow, JSON.stringify({
         getSettings: this.generateGetSettingsJsonMessage()
-    }), "*");
+    }));
 
 	document.getElementById("settingsIframe").style.visibility = "hidden";
 	document.getElementById("settingsIframe").style.display = "none";
@@ -388,10 +392,15 @@ realityEditor.gui.settings.showSettings = function() {
         document.getElementById("settingsEdgeDiv").style.display = "inline";
     }
 
-    document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+    // document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+    //     getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+    //     getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+    // }), "*");
+    
+    window.postIntoIframe(document.getElementById("settingsIframe").contentWindow, JSON.stringify({
         getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
         getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-    }), "*");
+    }));
 
     overlayDiv.style.display = "none";
 

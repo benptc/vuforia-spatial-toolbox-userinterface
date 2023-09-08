@@ -168,13 +168,19 @@ createNameSpace("realityEditor.sceneGraph");
         let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
         let numStopsRequired = countSubscribedFrames(objects);
 
-        realityEditor.device.profiling.startTimeProcess(`cameraUpdated__${hash}`, { numStopsRequired: numStopsRequired});
+        realityEditor.device.profiling.startTimeProcess(`cameraUpdated__${hash}`, { numStopsRequired: numStopsRequired, useDateNow: true });
+        realityEditor.device.profiling.startTimeProcess(`cameraReady__${hash}`);
 
         cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {
             realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix, print);
         }
-        
+
+        // immediately send the camera matrix in, without waiting for next frame to render
+        // realityEditor.forEachFrameInAllObjects((objectKey, frameKey) => {
+        //     realityEditor.network.frameContentAPI.sendCoordinateSystemsToIFrame(objectKey, frameKey);
+        // });
+
         if (print) {
             // console.log('%ccameraNode world matrix: ' + window.prettyPrintMatrix(cameraNode.worldMatrix, 1), 'color: red;');
             // console.log('---');

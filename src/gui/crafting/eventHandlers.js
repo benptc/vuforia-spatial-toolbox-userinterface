@@ -291,8 +291,10 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
             publicData: JSON.parse(publicData)
         };
 
-        document.getElementById('blockSettingsContainer').contentWindow.postMessage(
-            JSON.stringify(msg), '*');
+        // document.getElementById('blockSettingsContainer').contentWindow.postMessage(
+        //     JSON.stringify(msg), '*');
+        
+        window.postIntoIframe(document.getElementById('blockSettingsContainer').contentWindow, JSON.stringify(msg));
     }
 
     exports.onPointerDown = onPointerDown;

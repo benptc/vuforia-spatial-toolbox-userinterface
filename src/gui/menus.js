@@ -633,7 +633,8 @@ createNameSpace("realityEditor.gui.menus");
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame.visible) {
                 if (globalDOMCache["iframe" + frameKey] && globalDOMCache["iframe" + frameKey].contentWindow) {
-                    globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                    // globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                    window.postIntoIframe(globalDOMCache["iframe" + frameKey].contentWindow, JSON.stringify(msg));
                 }
 
                 // post into each visible node
@@ -641,7 +642,8 @@ createNameSpace("realityEditor.gui.menus");
                     var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     if (node.visible) {
                         if (globalDOMCache["iframe" + nodeKey] && globalDOMCache["iframe" + nodeKey].contentWindow) {
-                            globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                            // globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                            window.postIntoIframe(globalDOMCache["iframe" + nodeKey].contentWindow, JSON.stringify(msg));
                         }
                     }
                 });

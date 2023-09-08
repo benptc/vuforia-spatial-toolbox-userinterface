@@ -26,21 +26,21 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         return (hash & 0xFFFFFFFFn).toString(16).padStart(8, '0');
     }
 
-    function startTimeProcess(processTitle, options = {}) {
+    function startTimeProcess(processTitle, options = { useDateNow: false }) {
         if (!isShown) return;
         if (!isActivated) return;
 
         if (typeof processTimes[processTitle] === 'undefined') {
             processTimes[processTitle] = {};
         }
-        processTimes[processTitle].start = performance.now();
+        processTimes[processTitle].start = options.useDateNow ? Date.now() : performance.now();
         if (options.numStopsRequired) {
             processTimes[processTitle].numStopsRequired = options.numStopsRequired;
             processTimes[processTitle].numStopsAccumulated = 0;
         }
     }
 
-    function stopTimeProcess(processTitle, category, options = { showMessage: false, showAggregate: false, displayTimeout: 3000}) {
+    function stopTimeProcess(processTitle, category, options = { showMessage: false, showAggregate: false, displayTimeout: 3000, exactTimestamp: null}) {
         if (!isShown) return;
         if (!isActivated) return;
         if (!profilerSettingsUI) return;
@@ -57,7 +57,7 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
             }
         }
 
-        process.end = performance.now();
+        process.end = options.exactTimestamp || performance.now();
 
         let timeBetweenCategoryUpdates = process.end - (lastUpdateTimes[category] || 0);
         // console.log('time between updates', timeBetweenCategoryUpdates);
@@ -73,6 +73,11 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         let displayTime = time.toFixed(2);
         let numStopsText = processTimes[processTitle].numStopsAccumulated ? `(${processTimes[processTitle].numStopsAccumulated} stops)` : '';
         let labelText = `${processTitle}: ${yellow(displayTime)} ms ${numStopsText}`;
+
+        setTimeout(() => {
+            delete processTimes[processTitle];
+        }, 10);
+        
         if (options.showMessage) {
             profilerSettingsUI.addOrUpdateLabel(processTitle, labelText);
             // remove after 3 seconds if no updates between now and then
@@ -172,5 +177,12 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
     exports.activate = activate;
     exports.deactivate = deactivate;
 }(realityEditor.device.profiling));
+
+window.postIntoIframe = (contentWindow, message, targetOrigin = '*') => {
+    console.log('postIntoIframe');
+    realityEditor.device.profiling.startTimeProcess('postIntoIframe');
+    contentWindow.postMessage(message, targetOrigin);
+    realityEditor.device.profiling.stopTimeProcess('postIntoIframe', 'postIntoIframe', { showAggregate: true });
+};
 
 export const initService = realityEditor.device.profiling.initService;

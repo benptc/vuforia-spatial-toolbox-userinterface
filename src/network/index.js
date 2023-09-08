@@ -1382,8 +1382,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
             let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
             if (activeKey === msgContent.frame) { // only send these into frames, not nodes
                 // send the projection matrix into the iframe (e.g. for three.js to use)
-                globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                
+                window.postIntoIframe(globalDOMCache["iframe" + activeKey], '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}");
             }
         }
     }
@@ -1396,8 +1398,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.sendMatrices.view = msgContent.sendMatrices.view;
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
-                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                    // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+
+                    window.postIntoIframe(globalDOMCache["iframe" + activeKey], '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}");
                 }
             }
         }
@@ -1408,8 +1412,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.sendMatrices.view = msgContent.sendMatrices.view;
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
-                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                    // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+
+                    window.postIntoIframe(globalDOMCache["iframe" + activeKey], '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}");
                 }
             }
         }
@@ -1419,8 +1425,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.sendMatrices.groundPlane = true;
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
-                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                    // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+
+                    window.postIntoIframe(globalDOMCache["iframe" + activeKey], '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}");
                 }
             }
         }
@@ -1430,8 +1438,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.sendMatrices.anchoredModelView = true;
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
-                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                    // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+
+                    window.postIntoIframe(globalDOMCache["iframe" + activeKey], '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}");
                 }
             }
         }
@@ -1442,8 +1452,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     // send the projection matrix into the iframe (e.g. for three.js to use)
-                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                    // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+
+                    window.postIntoIframe(globalDOMCache["iframe" + activeKey], '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}");
                 }
             }
         }
@@ -1454,8 +1466,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     // send the projection matrix into the iframe (e.g. for three.js to use)
-                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                    // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+
+                    window.postIntoIframe(globalDOMCache["iframe" + activeKey], '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}");
                 }
             }
         }
@@ -1536,7 +1550,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
                         } else {
                             msg = {ohGlobalMessage: msgContent.ohGlobalMessage};
                         }
-                        iframes[i].contentWindow.postMessage(JSON.stringify(msg), "*");
+                        // iframes[i].contentWindow.postMessage(JSON.stringify(msg), "*");
+                        window.postIntoIframe(iframes[i].contentWindow, JSON.stringify(msg));
                     }
                 }
             }
@@ -1547,7 +1562,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
         var iframe = globalDOMCache['iframe' + msgContent.sendMessageToFrame.destinationFrame];
         if (iframe) {
-            iframe.contentWindow.postMessage(JSON.stringify(msgContent), '*');
+            // iframe.contentWindow.postMessage(JSON.stringify(msgContent), '*');
+            window.postIntoIframe(iframe.contentWindow, JSON.stringify(msgContent));
         }
 
         // var iframes = document.getElementsByTagName('iframe');
@@ -1761,9 +1777,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     if (typeof msgContent.getIsExclusiveFullScreenOccupied !== "undefined") {
         if (globalDOMCache['iframe' + msgContent.frame]) {
-            globalDOMCache['iframe' + msgContent.frame].contentWindow.postMessage(JSON.stringify({
+            // globalDOMCache['iframe' + msgContent.frame].contentWindow.postMessage(JSON.stringify({
+            //     fullScreenOccupiedStatus: realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames().length > 0
+            // }), '*');
+            window.postIntoIframe(globalDOMCache['iframe' + msgContent.frame].contentWindow, JSON.stringify({
                 fullScreenOccupiedStatus: realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames().length > 0
-            }), '*');
+            }));
         }
     }
 
@@ -1864,9 +1883,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.device.deactivateFrameMove(msgContent.frame);
             let frame = globalDOMCache['iframe' + msgContent.frame];
             if (frame && !msgContent.node) {
-                frame.contentWindow.postMessage(JSON.stringify({
+                // frame.contentWindow.postMessage(JSON.stringify({
+                //     stopTouchEditing: true
+                // }), "*");
+                window.postIntoIframe(frame.contentWindow, JSON.stringify({
                     stopTouchEditing: true
-                }), "*");
+                }));
             }
         }
     }
@@ -1936,7 +1958,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
                         deviceId
                     }
                 };
-                globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+                // globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+                window.postIntoIframe(globalDOMCache["iframe" + msgContent.frame].contentWindow, JSON.stringify(thisMsg));
             });
         }
     }
@@ -1948,7 +1971,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 getScreenshotBase64: base64String
                 // frameKey: realityEditor.network.frameIdForScreenshot
             };
-            globalDOMCache["iframe" + realityEditor.network.frameIdForScreenshot].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+            // globalDOMCache["iframe" + realityEditor.network.frameIdForScreenshot].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+            window.postIntoIframe(globalDOMCache["iframe" + realityEditor.network.frameIdForScreenshot].contentWindow, JSON.stringify(thisMsg));
         });
     }
 
@@ -1966,12 +1990,19 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.getScreenDimensions !== "undefined") {
-        globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify({
+        // globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify({
+        //     screenDimensions: {
+        //         width: globalStates.height,
+        //         height: globalStates.width
+        //     }
+        // }), '*');
+        
+        window.postIntoIframe(globalDOMCache["iframe" + msgContent.frame].contentWindow, JSON.stringify({
             screenDimensions: {
                 width: globalStates.height,
                 height: globalStates.width
             }
-        }), '*');
+        }));
     }
 
     // adjusts the iframe and touch overlay size based on a message from the iframe about the size of its contents changing
@@ -2070,7 +2101,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }
 
         if (globalDOMCache["iframe" + msgContent.frame]) {
-            globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+            // globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+            window.postIntoIframe(globalDOMCache["iframe" + msgContent.frame].contentWindow, JSON.stringify(response));
         }
     }
 
@@ -2316,8 +2348,10 @@ realityEditor.network.loadLogicName = function(data) {
     logicNode.name = data.loadLogicName;
 
     // update node text label on AR view
-    globalDOMCache["iframe" + logicNode.uuid].contentWindow.postMessage(
-        JSON.stringify( { renameNode: logicNode.name }) , "*");
+    // globalDOMCache["iframe" + logicNode.uuid].contentWindow.postMessage(
+    //     JSON.stringify( { renameNode: logicNode.name }) , "*");
+    
+    window.postIntoIframe(globalDOMCache["iframe" + logicNode.uuid].contentWindow, JSON.stringify( { renameNode: logicNode.name }))
 
     // // update model and view for pocket menu
     // var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(logicNode);
@@ -2367,27 +2401,39 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
      */
 
     if (msgContent.settings.getSettings) {
-        self.contentWindow.postMessage(JSON.stringify({
+        // self.contentWindow.postMessage(JSON.stringify({
+        //     getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage()
+        // }), "*");
+        window.postIntoIframe(self.contentWindow, JSON.stringify({
             getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage()
-        }), "*");
+        }));
     }
 
     if (msgContent.settings.getMainDynamicSettings) {
-        self.contentWindow.postMessage(JSON.stringify({
+        // self.contentWindow.postMessage(JSON.stringify({
+        //     getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+        // }), "*");
+        window.postIntoIframe(self.contentWindow, JSON.stringify({
             getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-        }), "*");
+        }));
     }
 
     if (msgContent.settings.getDevelopDynamicSettings) {
-        self.contentWindow.postMessage(JSON.stringify({
+        // self.contentWindow.postMessage(JSON.stringify({
+        //     getDevelopDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.DEVELOP)
+        // }), "*");
+        window.postIntoIframe(self.contentWindow, JSON.stringify({
             getDevelopDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.DEVELOP)
-        }), "*");
+        }));
     }
 
     if (msgContent.settings.getEnvironmentVariables) {
-        self.contentWindow.postMessage(JSON.stringify({
+        // self.contentWindow.postMessage(JSON.stringify({
+        //     getEnvironmentVariables: realityEditor.device.environment.variables
+        // }), "*");
+        window.postIntoIframe(self.contentWindow, JSON.stringify({
             getEnvironmentVariables: realityEditor.device.environment.variables
-        }), "*");
+        }));
     }
 
     // this is used for the "Found Objects" settings menu, to request the list of all found objects to be posted back into the settings iframe
@@ -2434,7 +2480,8 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
         }
 
-        self.contentWindow.postMessage(JSON.stringify({getObjects: thisObjects}), "*");
+        // self.contentWindow.postMessage(JSON.stringify({getObjects: thisObjects}), "*");
+        window.postIntoIframe(self.contentWindow, JSON.stringify({getObjects: thisObjects}))
     }
 
     /**
@@ -3208,7 +3255,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     // }
 
     globalDOMCache["iframe" + activeKey].setAttribute('loaded', true);
-    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
+    // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
+    window.postIntoIframe(globalDOMCache["iframe" + activeKey].contentWindow, JSON.stringify(newStyle));
 
     if (nodeKey) {
         var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
@@ -3372,7 +3420,8 @@ realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicD
 realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
     var frame = document.getElementById('iframe' + frameKey);
     if (frame) {
-        frame.contentWindow.postMessage(JSON.stringify(message), "*");
+        // frame.contentWindow.postMessage(JSON.stringify(message), "*");
+        window.postIntoIframe(frame.contentWindow, JSON.stringify(message));
     }
 };
 

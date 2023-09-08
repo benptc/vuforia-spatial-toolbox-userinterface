@@ -45,7 +45,8 @@ createNameSpace("realityEditor.network.frameContentAPI");
             let showMessage = msgContent.showMessage || false;
             let showAggregate = msgContent.showAggregate || true;
             let displayTimeout = msgContent.displayTimeout || 3000;
-            realityEditor.device.profiling.stopTimeProcess(msgContent.name, msgContent.category, { showMessage, showAggregate, displayTimeout });
+            let exactTimestamp = msgContent.exactTimestamp || null;
+            realityEditor.device.profiling.stopTimeProcess(msgContent.name, msgContent.category, { showMessage, showAggregate, displayTimeout, exactTimestamp });
         });
     }
     
@@ -59,7 +60,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
             lastSentMatrices[frameKey] = {};
         }
         
-        const TIME_PROCESS = false;
+        const TIME_PROCESS = true;
 
         let frameKeyWithoutObjectKey = frameKey.slice(objectKey.length);
         let processTitle = `sendSystems::${frameKeyWithoutObjectKey}`;
@@ -125,16 +126,20 @@ createNameSpace("realityEditor.network.frameContentAPI");
         //     console.warn(e);
         // }
 
-        globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify({
+        // globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify({
+        //     coordinateSystems: coordinateSystems
+        // }), '*');
+
+        window.postIntoIframe(globalDOMCache["iframe" + frameKey].contentWindow, JSON.stringify({
             coordinateSystems: coordinateSystems
-        }), '*');
+        }));
 
         Object.keys(coordinateSystems).forEach(coordSystem => {
             lastSentMatrices[frameKey][coordSystem] = matrixChecksum(coordinateSystems[coordSystem]);
         });
 
         if (TIME_PROCESS) {
-            realityEditor.device.profiling.stopTimeProcess(processTitle);
+            realityEditor.device.profiling.stopTimeProcess(processTitle, 'sendCoordsIntoIframe', { showMessage: false, showAggregate: true });
         }
         
         const END_BEFORE_SENDING_INTO_IFRAME = false;

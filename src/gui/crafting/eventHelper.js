@@ -882,8 +882,9 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
             autoImagePath: realityEditor.gui.crafting.getSrcForAutoIcon(logic)
         };
         
-        nodeSettingsContainer.contentWindow.postMessage(JSON.stringify(logicNodeData), '*');
+        // nodeSettingsContainer.contentWindow.postMessage(JSON.stringify(logicNodeData), '*');
         
+        window.postIntoIframe(nodeSettingsContainer.contentWindow, JSON.stringify(logicNodeData));
     };
     
     var craftingMenusContainer = document.getElementById('craftingMenusContainer');

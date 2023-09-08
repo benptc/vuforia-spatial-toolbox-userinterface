@@ -466,9 +466,12 @@ realityEditor.gui.screenExtension.sendScreenObject = function (){
         
         var iframe = globalDOMCache["iframe" + frameKey];
         if (iframe) {
-            iframe.contentWindow.postMessage(JSON.stringify({
+            // iframe.contentWindow.postMessage(JSON.stringify({
+            //     screenObject: screenObjectClone
+            // }), '*');
+            window.postIntoIframe(iframe.contentWindow, JSON.stringify({
                 screenObject: screenObjectClone
-            }), '*');
+            }));
         }
     }
     
