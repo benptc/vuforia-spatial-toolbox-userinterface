@@ -167,9 +167,12 @@ createNameSpace("realityEditor.sceneGraph");
 
         let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
         let numStopsRequired = countSubscribedFrames(objects);
+        
+        // console.log('camera position updated (parent app)');
 
-        realityEditor.device.profiling.startTimeProcess(`cameraUpdated__${hash}`, { numStopsRequired: numStopsRequired, useDateNow: true });
-        realityEditor.device.profiling.startTimeProcess(`cameraReady__${hash}`);
+        // realityEditor.device.profiling.startTimeProcess(`cameraUpdated__${hash}`, { numStopsRequired: numStopsRequired, useDateNow: true });
+        realityEditor.device.profiling.startTimeProcess(`cameraUpdated__${hash}`, { numStopsRequired: numStopsRequired });
+        // realityEditor.device.profiling.startTimeProcess(`cameraReady__${hash}`);
 
         cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {

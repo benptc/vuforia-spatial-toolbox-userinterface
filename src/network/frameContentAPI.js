@@ -10,6 +10,10 @@ createNameSpace("realityEditor.network.frameContentAPI");
     
     let lastSentMatrices = {};
     
+    // exports.didCameraMatrixChange = (frameKey) => {
+    //    
+    // }
+    
     /**
      * Public init method sets up module by registering callbacks when important events happen in other modules
      */
@@ -60,7 +64,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
             lastSentMatrices[frameKey] = {};
         }
         
-        const TIME_PROCESS = true;
+        const TIME_PROCESS = false;
 
         let frameKeyWithoutObjectKey = frameKey.slice(objectKey.length);
         let processTitle = `sendSystems::${frameKeyWithoutObjectKey}`;
@@ -129,6 +133,8 @@ createNameSpace("realityEditor.network.frameContentAPI");
         // globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify({
         //     coordinateSystems: coordinateSystems
         // }), '*');
+
+        // console.log(`send coordinate systems to ${frameKey}`);
 
         window.postIntoIframe(globalDOMCache["iframe" + frameKey].contentWindow, JSON.stringify({
             coordinateSystems: coordinateSystems

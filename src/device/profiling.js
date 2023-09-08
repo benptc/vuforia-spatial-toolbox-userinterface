@@ -79,21 +79,76 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         }, 10);
         
         if (options.showMessage) {
-            profilerSettingsUI.addOrUpdateLabel(processTitle, labelText);
-            // remove after 3 seconds if no updates between now and then
-            setTimeout(() => {
-                let timeSinceLastUpdate = performance.now() - lastUpdateTimes[processTitle];
-                if (timeSinceLastUpdate > (options.displayTimeout - 100)) {
-                    // console.log(`remove ${processTitle}`);
-                    profilerSettingsUI.removeLabel(processTitle);
-                }
-            }, options.displayTimeout);
+            logIndividualProcess(processTitle, labelText, options);
+            // profilerSettingsUI.addOrUpdateLabel(processTitle, labelText);
+            // // remove after 3 seconds if no updates between now and then
+            // setTimeout(() => {
+            //     let timeSinceLastUpdate = performance.now() - lastUpdateTimes[processTitle];
+            //     if (timeSinceLastUpdate > (options.displayTimeout - 100)) {
+            //         // console.log(`remove ${processTitle}`);
+            //         profilerSettingsUI.removeLabel(processTitle);
+            //     }
+            // }, options.displayTimeout);
         }
 
         if (!category) return;
         if (!options.showAggregate) return;
 
-        updateCategory(category, time, timeBetweenCategoryUpdates);
+        let info = updateCategory(category, time, timeBetweenCategoryUpdates);
+        if (info) {
+            // let count = info.processCategories[category].count;
+            // let numResets = info.processCategories[category].numDisplayResets;
+            let meanT = info.mean.toFixed(2);
+            let minT = info.fastest.toFixed(2);
+            let maxT = info.slowest.toFixed(2);
+
+            // if (typeof displayCooldowns[category] !== 'undefined' && displayCooldowns[category] > 0) {
+            //     displayCooldowns[category]--;
+            //     return;
+            // } // don't slow down process by rendering too often
+            // displayCooldowns[category] = 5;
+
+            let meanLabelText = `${category} (${info.count}) –– mean: ${yellow(meanT)} –– min: ${yellow(minT)} –– max: ${yellow(maxT)}`;
+            profilerSettingsUI.addOrUpdateLabel(`mean_${category}`, meanLabelText, { pinToTop: true });
+        } else {
+            console.warn('no category info', category, processTitle, processCategories);
+        }
+    }
+    
+    function logIndividualProcess(processTitle, options = { displayTimeout: 3000, labelText: null }) {
+        if (!isShown) return;
+        if (!isActivated) return;
+        if (!profilerSettingsUI) return;
+        
+        profilerSettingsUI.addOrUpdateLabel(processTitle, options.labelText || processTitle);
+        
+        // remove after 3 seconds if no updates between now and then
+        setTimeout(() => {
+            let timeSinceLastUpdate = performance.now() - lastUpdateTimes[processTitle];
+            if (timeSinceLastUpdate > (options.displayTimeout - 100)) {
+                // console.log(`remove ${processTitle}`);
+                profilerSettingsUI.removeLabel(processTitle);
+            }
+        }, options.displayTimeout);
+    }
+    
+    function logProcessCount(processTitle) {
+        if (!isShown) return;
+        if (!isActivated) return;
+        if (!profilerSettingsUI) return;
+        
+        let categoryName = `${processTitle}_count`;
+        // let info = updateCategory(processTitle, time, timeBetweenCategoryUpdates);
+        if (typeof processCategories[categoryName] === 'undefined') {
+            processCategories[categoryName] = {
+                count: 1
+            };
+        } else {
+            processCategories[categoryName].count += 1;
+        }
+        
+        let countLabelText = `${categoryName} has happened (${processCategories[categoryName].count}) times`;
+        profilerSettingsUI.addOrUpdateLabel(`${categoryName}`, countLabelText, { pinToTop: true });
     }
 
     // show aggregate mean/min/max times for recent tasks of this category
@@ -125,19 +180,7 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
             processCategories[category].count += 1;
         }
 
-        let count = processCategories[category].count;
-        let numResets = processCategories[category].numDisplayResets;
-        let meanT = processCategories[category].mean.toFixed(2);
-        let minT = processCategories[category].fastest.toFixed(2)
-        let maxT = processCategories[category].slowest.toFixed(2)
-        
-        if (typeof displayCooldowns[category] !== 'undefined' && displayCooldowns[category] > 0) {
-            displayCooldowns[category]--;
-            return;
-        } // don't slow down process by rendering too often
-        displayCooldowns[category] = 5;
-        let meanLabelText = `${category} (${count}) –– mean: ${yellow(meanT)} –– min: ${yellow(minT)} –– max: ${yellow(maxT)}`;
-        profilerSettingsUI.addOrUpdateLabel(`mean_${category}`, meanLabelText, { pinToTop: true });
+        return processCategories[category];
     }
 
     function yellow(text) {
@@ -169,20 +212,26 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
     }
 
     exports.initService = initService;
-    exports.getShortHashForString = getShortHashForString;
-    exports.startTimeProcess = startTimeProcess;
-    exports.stopTimeProcess = stopTimeProcess;
     exports.show = show;
     exports.hide = hide;
     exports.activate = activate;
     exports.deactivate = deactivate;
+    // logging methods
+    exports.startTimeProcess = startTimeProcess;
+    exports.stopTimeProcess = stopTimeProcess;
+    exports.logIndividualProcess = logIndividualProcess;
+    exports.logProcessCount = logProcessCount;
+    // helper function
+    exports.getShortHashForString = getShortHashForString;
 }(realityEditor.device.profiling));
 
 window.postIntoIframe = (contentWindow, message, targetOrigin = '*') => {
-    console.log('postIntoIframe');
-    realityEditor.device.profiling.startTimeProcess('postIntoIframe');
+    // console.log('postIntoIframe');
+    // realityEditor.device.profiling.startTimeProcess('postIntoIframe');
     contentWindow.postMessage(message, targetOrigin);
-    realityEditor.device.profiling.stopTimeProcess('postIntoIframe', 'postIntoIframe', { showAggregate: true });
+    // realityEditor.device.profiling.stopTimeProcess('postIntoIframe', 'postIntoIframe', { showAggregate: true });
+    
+    realityEditor.device.profiling.logProcessCount('postIntoIframe');
 };
 
 export const initService = realityEditor.device.profiling.initService;
