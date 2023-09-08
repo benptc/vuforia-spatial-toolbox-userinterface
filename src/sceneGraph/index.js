@@ -28,20 +28,22 @@ createNameSpace("realityEditor.sceneGraph");
     }
     let rootNode;
     let cameraNode;
+    let unsmoothedCameraNode;
+    let useUnsmoothedCameraNode = false;
     let deviceNode;
     let groundPlaneNode;
-    // TODO: use these cached values when possible instead of recomputing
+    // use these cached values when possible instead of recomputing
     let relativeToCamera = {};
     let finalCSSMatrices = {};
     let finalCSSMatricesWithoutTransform = {};
     let visualElements = {};
 
-    // TODO ben: use this enum in other modules instead of having any string names
     const NAMES = Object.freeze({
         ROOT: 'ROOT',
         CAMERA: 'CAMERA',
         DEVICE: 'DEVICE',
-        GROUNDPLANE: 'GROUNDPLANE'
+        GROUNDPLANE: 'GROUNDPLANE',
+        UNSMOOTHED_CAMERA: 'UNSMOOTHED_CAMERA'
     });
     exports.NAMES = NAMES;
 
@@ -62,6 +64,10 @@ createNameSpace("realityEditor.sceneGraph");
         cameraNode = new SceneNode(NAMES.CAMERA);
         sceneGraph[NAMES.CAMERA] = cameraNode;
         cameraNode.setParent(rootNode);
+        
+        unsmoothedCameraNode = new SceneNode(NAMES.UNSMOOTHED_CAMERA);
+        sceneGraph[NAMES.UNSMOOTHED_CAMERA] = unsmoothedCameraNode;
+        unsmoothedCameraNode.setParent(rootNode);
 
         // create a node representing the ground plane coordinate system
         groundPlaneNode = new SceneNode(NAMES.GROUNDPLANE);
@@ -161,9 +167,18 @@ createNameSpace("realityEditor.sceneGraph");
             return acc + enabledCount;
         }, 0);
     }
+    
+    exports.shouldUseUnsmoothedCameraNode = () => {
+        return useUnsmoothedCameraNode;
+    }
 
-    function setCameraPosition(cameraMatrix, print) {
+    function setCameraPosition(cameraMatrix, print, unsmoothedCameraMatrix) {
         if (!cameraNode) { return; }
+        
+        if (unsmoothedCameraMatrix) {
+            unsmoothedCameraNode.setLocalMatrix(unsmoothedCameraMatrix, { recomputeImmediately: true });
+            useUnsmoothedCameraNode = true;
+        }
 
         let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
         let numStopsRequired = countSubscribedFrames(objects);

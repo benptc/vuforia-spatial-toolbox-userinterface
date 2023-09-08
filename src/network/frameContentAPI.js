@@ -84,7 +84,12 @@ createNameSpace("realityEditor.network.frameContentAPI");
         let coordinateSystems = {};
         
         if (sendCamera) {
-            coordinateSystems.camera = realityEditor.sceneGraph.getCameraNode().worldMatrix;
+            if (realityEditor.sceneGraph.shouldUseUnsmoothedCameraNode()) {
+                coordinateSystems.camera = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.UNSMOOTHED_CAMERA).worldMatrix;
+                console.log('using unsmoothed camera node');
+            } else {
+                coordinateSystems.camera = realityEditor.sceneGraph.getCameraNode().worldMatrix;
+            }
         }
         if (sendProjectionMatrix) {
             coordinateSystems.projectionMatrix = globalStates.realProjectionMatrix;
