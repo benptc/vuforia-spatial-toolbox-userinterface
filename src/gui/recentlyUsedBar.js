@@ -11,35 +11,97 @@ class RecentlyUsedBar {
         this.canvas.className = 'ru-canvas';
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
-        this.ctx = this.canvas.getContext("2d");
+        this.ctx = this.canvas.getContext('2d');
 
         this.iconElts = [];
         this.capacity = 3;
         this.hoveredFrameId = null;
         this.hoverAnimationPercent = 0;
-        this.hoverAnimationDurationMs = 60; // speed of the slowest part of the line
+        this.hoverAnimationDurationMs = 100; // speed of the slowest part of the line
         this.lastAnimationPositions = null;
         this.lastDraw = Date.now();
         this.canvasHasContent = false;
 
+        this.callbacks = {
+            onIconStartDrag: [],
+            onIconStopDrag: []
+        };
+
+        this.dragState = {
+            pointerDown: false,
+            didStartDrag: false,
+            target: {
+                icon: null,
+                objectId: null,
+                frameId: null
+            },
+            draggedIcon: null
+        };
+
         this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
         this.onIconPointerDown = this.onIconPointerDown.bind(this);
+        this.onIconPointerUp = this.onIconPointerUp.bind(this);
         this.onIconPointerOver = this.onIconPointerOver.bind(this);
         this.onIconPointerOut = this.onIconPointerOut.bind(this);
         this.onEnvelopeRegistered = this.onEnvelopeRegistered.bind(this);
         this.onOpen = this.onOpen.bind(this);
         this.onClose = this.onClose.bind(this);
+        this.resetDrag = this.resetDrag.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
     }
 
     initService() {
         document.body.appendChild(this.container);
         document.body.appendChild(this.canvas);
 
+        document.addEventListener('pointercancel', this.resetDrag);
+        document.addEventListener('pointerup', this.resetDrag);
+        document.addEventListener('pointermove', this.onPointerMove);
+
         realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface
         realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server
 
         realityEditor.device.layout.onWindowResized(this.resizeCanvas.bind(this));
         this.renderCanvas();
+    }
+
+    resetDrag() {
+        let draggedIcon = this.dragState.draggedIcon;
+        // if we have a draggedIcon, remove it
+        if (draggedIcon && draggedIcon.parentElement) {
+            let boundingRect = draggedIcon.getBoundingClientRect();
+            let x = parseInt(draggedIcon.style.left) + boundingRect.width/2;
+            let y = parseInt(draggedIcon.style.top) + boundingRect.height/2;
+
+            // delete the associated tool if the icon is over the trash zone
+            if (realityEditor.device.isPointerInTrashZone(x, y)) {
+                // delete it
+                let frame = realityEditor.getFrame(this.dragState.target.objectId, this.dragState.target.frameId);
+                if (frame) {
+                    realityEditor.device.tryToDeleteSelectedVehicle(frame);
+                }
+            }
+            draggedIcon.parentElement.removeChild(draggedIcon);
+        }
+
+        this.dragState = {
+            pointerDown: false,
+            didStartDrag: false,
+            target: {
+                icon: null,
+                objectId: null,
+                frameId: null
+            },
+            draggedIcon: null
+        }
+
+        this.callbacks.onIconStopDrag.forEach(cb => cb());
+    }
+
+    setDragTarget(objectId, frameId) {
+        this.dragState.target.icon = this.getIcon(frameId);
+        this.dragState.target.objectId = objectId;
+        this.dragState.target.frameId = frameId;
     }
 
     onVehicleDeleted(event) {
@@ -59,9 +121,17 @@ class RecentlyUsedBar {
 
     onIconPointerDown(event) {
         const iconElt = event.target;
+        this.setDragTarget(iconElt.dataset.objectId, iconElt.dataset.frameId);
+        this.dragState.pointerDown = true;
+    }
+
+    onIconPointerUp(event) {
+        const iconElt = event.target;
         const frameId = iconElt.dataset.frameId;
         let isFirstIcon = frameId === this.iconElts[0].dataset.frameId;
         iconElt.dataset.lastActive = Date.now();
+
+        this.dragState.pointerDown = false;
 
         let alreadyFocused = false;
         realityEditor.envelopeManager.getOpenEnvelopes().forEach(function(envelope) {
@@ -92,8 +162,46 @@ class RecentlyUsedBar {
         this.hoveredFrameId = iconElt.dataset.frameId;
     }
 
-    onIconPointerOut(_event) {
+    onIconPointerOut(event) {
         this.hoveredFrameId = null;
+
+        const iconElt = event.target;
+        if (this.dragState.pointerDown &&
+            this.dragState.target.frameId === iconElt.dataset.frameId) {
+            this.activateDrag();
+        }
+    }
+
+    activateDrag() {
+        if (this.dragState.didStartDrag) return;
+        this.dragState.didStartDrag = true;
+
+        //create ghost of button
+        let target = this.dragState.target;
+        let draggedIcon = this.createIconImg(target.objectId, target.frameId);
+        draggedIcon.style.opacity = '.75';
+        draggedIcon.style.pointerEvents = 'none';
+        document.body.appendChild(draggedIcon);
+        this.dragState.draggedIcon = draggedIcon;
+
+        this.callbacks.onIconStartDrag.forEach(cb => cb());
+    }
+
+    onPointerMove(event) {
+        if (!this.dragState.pointerDown) return;
+        if (!this.dragState.didStartDrag) return;
+        if (!this.dragState.draggedIcon) return;
+
+        let boundingRect = this.dragState.draggedIcon.getBoundingClientRect();
+
+        this.dragState.draggedIcon.style.left = `${event.pageX - boundingRect.width/2}px`;
+        this.dragState.draggedIcon.style.top = `${event.pageY - boundingRect.height/2}px`;
+
+        if (realityEditor.device.isPointerInTrashZone(event.pageX, event.pageY)) {
+            overlayDiv.classList.add('overlayNegative');
+        } else {
+            overlayDiv.classList.remove('overlayNegative');
+        }
     }
 
     onEnvelopeRegistered(frame) {
@@ -142,35 +250,41 @@ class RecentlyUsedBar {
         }
     }
 
+    createIconImg(objectId, frameId) {
+        let object = objects[objectId];
+        let frame = object.frames[frameId];
+
+        let icon = document.createElement('img');
+        icon.classList.add('ru-icon');
+        icon.dataset.newlyAdded = true;
+        icon.style.position = 'absolute';
+        // arbitrary amount to make the animation look good
+        icon.style.top = '66px';
+
+        if (object && frame) {
+            icon.dataset.frameId = frame.uuid;
+            icon.dataset.objectId = frame.objectId;
+            let name = frame.src;
+            icon.src = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/frames/' + name + '/icon.gif');
+        }
+
+        return icon;
+    }
+
     updateIcon(frame, lastActive) {
-        let object = objects[frame.objectId];
         let icon = this.getIcon(frame.uuid);
 
         if (!icon) {
-            // Don't bother adding icons that won't appear in the final list
-            // due to being old
-            if (this.iconElts.length === this.capacity) {
-                let oldestIcon = this.iconElts[this.iconElts.length - 1];
-                let oldestTime = parseFloat(oldestIcon.dataset.lastActive);
-                if (oldestTime > lastActive) {
-                    return;
-                }
-            }
-
-            icon = document.createElement('img');
-            icon.classList.add('ru-icon');
-            icon.dataset.frameId = frame.uuid;
-            icon.dataset.newlyAdded = true;
-            icon.style.position = 'absolute';
-            // arbitrary amount to make the animation look good
-            icon.style.top = '66px';
-
-            let name = frame.src;
-            icon.src = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/frames/' + name + '/icon.gif');
+            icon = this.createIconImg(frame.objectId, frame.uuid);
 
             icon.addEventListener('pointerdown', this.onIconPointerDown);
-            icon.addEventListener('pointerover', this.onIconPointerOver);
+            icon.addEventListener('pointerup', this.onIconPointerUp);
+            // hovering over the button only makes sense on a desktop environment – touchscreens don't have hover
+            if (realityEditor.device.environment.requiresMouseEvents()) {
+                icon.addEventListener('pointerover', this.onIconPointerOver);
+            }
             icon.addEventListener('pointerout', this.onIconPointerOut);
+            icon.addEventListener('pointercancel', this.onIconPointerUp);
 
             this.iconElts.push(icon);
 
@@ -205,9 +319,28 @@ class RecentlyUsedBar {
             easing: 'ease-out',
         });
 
-        if (this.iconElts.length > this.capacity) {
-            let last = this.iconElts.pop();
-            last.animate([{
+        for (let i = 0; i < this.capacity && i < this.iconElts.length; i++) {
+            let iconInBar = this.iconElts[i];
+            if (iconInBar.style.display !== 'none') {
+                continue;
+            }
+            iconInBar.style.display = '';
+            iconInBar.animate([{
+                opacity: 0,
+            }, {
+                opacity: 1,
+            }], {
+                duration: animDur * 0.5,
+                fill: 'both',
+            });
+        }
+
+        for (let i = this.capacity; i < this.iconElts.length; i++) {
+            let iconOutOfBar = this.iconElts[i];
+            if (iconOutOfBar.style.display === 'none') {
+                continue;
+            }
+            iconOutOfBar.animate([{
                 opacity: 1,
             }, {
                 opacity: 0,
@@ -217,7 +350,7 @@ class RecentlyUsedBar {
             });
 
             setTimeout(() => {
-                this.container.removeChild(last);
+                iconOutOfBar.style.display = 'none';
             }, animDur * 0.5);
         }
     }

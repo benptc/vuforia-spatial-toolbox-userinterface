@@ -1,7 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {
-    JOINTS,
-} from './utils.js';
+import {JOINTS} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
@@ -40,10 +38,9 @@ export class HumanPoseAnalyzer {
      * Creates a new HumanPoseAnalyzer
      * @param {Object3D} parent - container to add the analyzer's containers to
      */
-    constructor(parent) {
+    constructor(analytics, parent) {
+        this.analytics = analytics
         this.setupContainers(parent);
-
-        this.active = true;
 
         /** @type {AnalyticsLens[]} */
         this.lenses = [
@@ -87,6 +84,7 @@ export class HumanPoseAnalyzer {
         this.recordingClones = realityEditor.device.environment.isDesktop();
         this.lastDisplayedClones = [];
 
+        this.animationPlaying = true;
         this.prevAnimationState = null;
         this.animationStart = -1;
         this.animationEnd = -1;
@@ -125,6 +123,10 @@ export class HumanPoseAnalyzer {
 
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
+    }
+
+    get active() {
+      return realityEditor.analytics.getActiveHumanPoseAnalyzer() === this;
     }
 
     get activeLens() {
@@ -410,7 +412,7 @@ export class HumanPoseAnalyzer {
      * @return {Spaghetti} - the spaghetti line that was created
      */
     createSpaghetti(lens, id, historical) {
-        const analytics = realityEditor.analytics.getActiveAnalytics();
+        const analytics = this.analytics;
         const spaghetti = new Spaghetti([], analytics, `spaghetti-${id}-${lens.name}-${historical ? 'historical' : 'live'}`, {
             widthMm: 30,
             heightMm: 30,
@@ -574,6 +576,8 @@ export class HumanPoseAnalyzer {
      * @param {boolean} fromSpaghetti - whether a history mesh originated this change
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
+        // Reset animationPlaying so that we default to always playing
+        this.animationPlaying = true;
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
             if (!fromSpaghetti) {
@@ -606,14 +610,18 @@ export class HumanPoseAnalyzer {
         const firstTimestamp = displayRegion.startTime;
         const secondTimestamp = displayRegion.endTime;
 
-        for (let spaghetti of Object.values(this.historyLines[this.activeLens.name].historical)) { // This feature only enabled for historical history lines
-            if (spaghetti.getStartTime() > secondTimestamp || spaghetti.getEndTime() < firstTimestamp) {
-                spaghetti.visible = false;
-                continue;
+        this.lenses.forEach(lens => {
+            for (let spaghetti of Object.values(this.historyLines[lens.name].historical)) { // This feature only enabled for historical history lines
+                spaghetti.setDisplayRegion(displayRegion);
+                if (spaghetti.getStartTime() > secondTimestamp || spaghetti.getEndTime() < firstTimestamp) {
+                    spaghetti.visible = false;
+                    continue;
+                }
+                if (this.activeLens === lens) {
+                    spaghetti.visible = true;
+                }
             }
-            spaghetti.visible = true;
-            spaghetti.setDisplayRegion(displayRegion);
-        }
+        });
     }
 
     /**
@@ -929,7 +937,9 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        this.animationPosition += dt;
+        if (this.animationPlaying) {
+            this.animationPosition += dt;
+        }
         let progress = this.animationPosition - this.animationStart;
         let animationDuration = this.animationEnd - this.animationStart;
         let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo
@@ -937,7 +947,7 @@ export class HumanPoseAnalyzer {
 
         // As the active HPA we control the shared cursor
         if (this.active) {
-            realityEditor.analytics.getActiveAnalytics().setCursorTime(this.animationPosition, true);
+            this.analytics.setCursorTime(this.animationPosition, true);
         } else {
             // Otherwise display the clone without interfering
             this.displayClonesByTimestamp(this.animationPosition);

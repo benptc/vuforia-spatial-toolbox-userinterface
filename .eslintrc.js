@@ -43,6 +43,7 @@ module.exports = {
         "io": "writable",
         "objects": "writable",
         "overlayDiv": "writable",
+        "overlayDiv2": "writable",
         "p5": "writable",
         "pocketBegin": "writable",
         "pocketDropAnimation": "writable",
@@ -65,7 +66,7 @@ module.exports = {
         "webkitConvertPointFromPageToNode": "writable",
     },
     "parserOptions": {
-        "ecmaVersion": 2018,
+        "ecmaVersion": 2022,
         "sourceType": "module",
     },
     "rules": {

@@ -1,5 +1,5 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
-import {JOINTS} from "../humanPose/utils.js";
+import {JOINTS} from "../humanPose/constants.js";
 
 const cardWidth = 200;
 const rowHeight = 22;
@@ -28,8 +28,10 @@ export class RegionCard {
      * @param {Analytics} analytics - parent instance of Analytics
      * @param {Element} container
      * @param {Array<Pose>} poses - the poses to process in this region card
+     * @param {{startTime: number, endTime: number}?} desc - If present, the
+     * dehydrated description of this card
      */
-    constructor(analytics, container, poses) {
+    constructor(analytics, container, poses, desc) {
         this.analytics = analytics;
         this.container = container;
         this.poses = poses;
@@ -40,6 +42,7 @@ export class RegionCard {
             hour12: false,
         });
         this.state = RegionCardState.Tooltip;
+        this.accentColor = '';
         // If a region card has control over the timeline's displayed points
         this.displayActive = false;
         this.onPointerOver = this.onPointerOver.bind(this);
@@ -49,6 +52,10 @@ export class RegionCard {
         this.onClickShow = this.onClickShow.bind(this);
 
         this.createCard();
+        if (desc) {
+            this.startTime = desc.startTime;
+            this.endTime = desc.endTime;
+        }
         this.setPoses(poses);
 
         this.element.addEventListener('pointerover', this.onPointerOver);
@@ -96,6 +103,7 @@ export class RegionCard {
                 this.analytics.setActiveRegionCard(null);
                 this.analytics.setHighlightRegion(null);
                 this.analytics.setCursorTime(-1);
+                this.displayActive = false;
             } else {
                 this.analytics.setActiveRegionCard(this);
                 this.analytics.setHighlightRegion({
@@ -103,11 +111,11 @@ export class RegionCard {
                     endTime: this.endTime,
                     label: this.getLabel(),
                 });
+                this.displayActive = true;
             }
-            this.displayActive = !this.displayActive;
             break;
         }
-        this.updateShowButton();
+        this.updateDisplayActive();
     }
 
     pin() {
@@ -157,10 +165,10 @@ export class RegionCard {
         if (pinButton) {
             pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         }
-        this.updateShowButton();
+        this.updateDisplayActive();
     }
 
-    updateShowButton() {
+    updateDisplayActive() {
         let showButton = this.element.querySelector('.analytics-region-card-show');
         if (!showButton) {
             console.warn('regioncard missing element');
@@ -174,6 +182,12 @@ export class RegionCard {
         }
 
         showButton.textContent = this.displayActive ? 'Hide' : 'Show';
+
+        if (this.displayActive) {
+            this.element.classList.add('displayActive');
+        } else {
+            this.element.classList.remove('displayActive');
+        }
     }
 
     createCard() {
@@ -186,6 +200,11 @@ export class RegionCard {
             'analytics-region-card-date-time'
         );
 
+        const colorDot = document.createElement('div');
+        colorDot.classList.add(
+            'analytics-region-card-dot'
+        );
+
         const motionSummary = document.createElement('div');
         motionSummary.classList.add(
             'analytics-region-card-subtitle',
@@ -193,6 +212,7 @@ export class RegionCard {
         );
 
         this.element.appendChild(dateTimeTitle);
+        this.element.appendChild(colorDot);
         this.element.appendChild(motionSummary);
 
         this.labelElement = document.createElement('div');
@@ -243,22 +263,45 @@ export class RegionCard {
         showButton.classList.add('analytics-region-card-show');
         showButton.addEventListener('click', this.onClickShow);
         this.element.appendChild(showButton);
-        this.updateShowButton();
+        this.updateDisplayActive();
     }
 
     setPoses(poses) {
         this.poses = poses;
+
+        // Getting times from poses is more accurate to the local data
+        if (this.poses.length > 0) {
+            this.poses.sort((a, b) => {
+                return a.timestamp - b.timestamp;
+            });
+            let filteredPoses = [];
+            let lastTs = 0;
+            for (let pose of this.poses) {
+              if (pose.timestamp - lastTs < 50) {
+                continue;
+              }
+              lastTs = pose.timestamp;
+              filteredPoses.push(pose);
+            }
+            this.poses = filteredPoses;
+
+            this.startTime = this.poses[0].timestamp;
+            this.endTime = this.poses[this.poses.length - 1].timestamp;
+        }
+
+        try {
+            const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
+            dateTimeTitle.textContent = this.dateTimeFormat.formatRange(
+                new Date(this.startTime),
+                new Date(this.endTime),
+            );
+        } catch (_) {
+            // formatRange failed for some time-related reason
+        }
+
         if (this.poses.length === 0) {
             return;
         }
-        this.startTime = this.poses[0].timestamp;
-        this.endTime = this.poses[this.poses.length - 1].timestamp;
-
-        const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
-        dateTimeTitle.textContent = this.dateTimeFormat.formatRange(
-            new Date(this.startTime),
-            new Date(this.endTime),
-        );
 
         const motionSummary = this.element.querySelector('.analytics-region-card-motion-summary');
         motionSummary.textContent = this.getMotionSummaryText();
@@ -440,6 +483,14 @@ export class RegionCard {
 
     setLabel(label) {
         this.labelElement.textContent = label;
+    }
+
+    setAccentColor(accentColor) {
+        this.accentColor = accentColor;
+        const colorDot = this.element.querySelector('.analytics-region-card-dot');
+        if (colorDot) {
+            colorDot.style.backgroundColor = this.accentColor;
+        }
     }
 
     moveTo(x, y) {

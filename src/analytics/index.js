@@ -19,6 +19,11 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
     const noneFrame = 'none';
     let activeFrame = '';
     let analyticsByFrame = {};
+    
+    function getDefaultAnalytics() {
+        return analyticsByFrame[noneFrame];
+    }
+    exports.getDefaultAnalytics = getDefaultAnalytics;
 
     /**
      * @return {Analytics}
@@ -27,6 +32,11 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
         return analyticsByFrame[activeFrame];
     }
     exports.getActiveAnalytics = getActiveAnalytics;
+    
+    function getAnalyticsByFrame(frame) {
+        return analyticsByFrame[frame];
+    }
+    exports.getAnalyticsByFrame = getAnalyticsByFrame;
 
     /**
      * @return {HumanPoseAnalyzer}
@@ -52,86 +62,88 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
     }
     exports.getActiveTimeline = getActiveTimeline;
 
+    function onVehicleDeleted(event) {
+        if (!event.objectKey || !event.frameKey || event.nodeKey) {
+            return;
+        }
+        if (!analyticsByFrame[event.frameKey]) {
+            return;
+        }
+        analyticsByFrame[event.frameKey].close();
+        delete analyticsByFrame[event.frameKey];
+        if (activeFrame === event.frameKey) {
+            activeFrame = noneFrame;
+        }
+    }
+
     function initService() {
         activeFrame = noneFrame;
         analyticsByFrame[noneFrame] = makeAnalytics(noneFrame);
+        analyticsByFrame[noneFrame].show3D();
+        const settingsUi = analyticsByFrame[noneFrame].humanPoseAnalyzer.settingsUi;
+        if (settingsUi) {
+            settingsUi.markLive();
+        }
 
         realityEditor.network.addPostMessageHandler('analyticsOpen', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
                 analyticsByFrame[msgData.frame] = makeAnalytics(msgData.frame);
             }
             activeFrame = msgData.frame;
-            getActiveAnalytics().open();
+            analyticsByFrame[msgData.frame].open();
             realityEditor.app.enableHumanTracking();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsClose', (msgData) => {
-            if (!analyticsByFrame[msgData.frame] || activeFrame !== msgData.frame) {
+            if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            getActiveAnalytics().close();
-
-            // Could disable proactively, not a priority since it may lead to
-            // unexpected behavior
-            // realityEditor.app.disableHumanTracking();
+            analyticsByFrame[msgData.frame].close();
+            if (activeFrame === msgData.frame) {
+                activeFrame = noneFrame;
+            }
         });
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
-                return;
+                analyticsByFrame[msgData.frame] = makeAnalytics(msgData.frame);
             }
             if (activeFrame !== msgData.frame) {
-                getActiveAnalytics().blur();
+                const activeAnalytics = getActiveAnalytics();
+                if (activeAnalytics !== realityEditor.analytics.getDefaultAnalytics()) {
+                    activeAnalytics.blur(); // Default analytics should only lose 2D UI manually via menu bar
+                }
             }
             activeFrame = msgData.frame;
-            getActiveAnalytics().focus();
+            analyticsByFrame[msgData.frame].focus();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsBlur', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            analyticsByFrame[msgData.frame].blur(msgData.frame);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetCursorTime', (msgData) => {
-            getActiveAnalytics().setCursorTime(msgData.time);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetHighlightRegion', (msgData) => {
-            getActiveAnalytics().setHighlightRegion(msgData.highlightRegion);
+            analyticsByFrame[msgData.frame].blur();
+            if (activeFrame === msgData.frame) {
+                activeFrame = noneFrame;
+            }
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetDisplayRegion', (msgData) => {
-            if (activeFrame === 'none') {
+            if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            getActiveAnalytics().setDisplayRegion(msgData.displayRegion);
+            analyticsByFrame[msgData.frame].setDisplayRegion(msgData.displayRegion);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsHydrateRegionCards', (msgData) => {
-            getActiveAnalytics().hydrateRegionCards(msgData.regionCards);
+            if (!analyticsByFrame[msgData.frame]) {
+                return;
+            }
+            analyticsByFrame[msgData.frame].hydrateRegionCards(msgData.regionCards);
         });
 
-        realityEditor.network.addPostMessageHandler('analyticsSetLens', (msgData) => {
-            getActiveAnalytics().setLens(msgData.lens);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetLensDetail', (msgData) => {
-            getActiveAnalytics().setLensDetail(msgData.lensDetail);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetSpaghettiAttachPoint', (msgData) => {
-            getActiveAnalytics().setSpaghettiAttachPoint(msgData.spaghettiAttachPoint);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetSpaghettiVisible', (msgData) => {
-            getActiveAnalytics().setSpaghettiVisible(msgData.spaghettiVisible);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetAllClonesVisible', (msgData) => {
-            getActiveAnalytics().setSpaghettiVisible(msgData.allClonesVisible);
-        });
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using server
     }
     exports.initService = initService;
 }(realityEditor.analytics));

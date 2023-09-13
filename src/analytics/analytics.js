@@ -24,11 +24,13 @@ export class Analytics {
         this.timelineContainer = document.createElement('div');
         this.timelineContainer.id = 'analytics-timeline-container';
 
+        this.patchFilter = this.patchFilter.bind(this);
+
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this, this.timelineContainer);
 
         this.threejsContainer = new THREE.Group();
-        this.humanPoseAnalyzer = new HumanPoseAnalyzer(this.threejsContainer);
+        this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
         this.opened = false;
         this.loadingHistory = false;
         this.livePlayback = false;
@@ -94,6 +96,7 @@ export class Analytics {
         if (this.threejsContainer.parent) {
             realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
         }
+        this.resetPatchVisibility();
     }
 
     /**
@@ -158,11 +161,51 @@ export class Analytics {
     }
 
     /**
+     * @param {CameraVisPatch} patch
+     * @return {boolean}
+     */
+    patchFilter(patch) {
+        if (!this.lastDisplayRegion) {
+            return true;
+        }
+
+        if (this.lastDisplayRegion.startTime > 0 &&
+            patch.creationTime < this.lastDisplayRegion.startTime) {
+            return false;
+        }
+
+        if (this.lastDisplayRegion.endTime > 0 &&
+            patch.creationTime > this.lastDisplayRegion.endTime) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * We take control over CameraVis patch visibility for
+     * animation reasons so this restores them all
+     */
+    resetPatchVisibility() {
+        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+        if (!desktopRenderer) {
+            return;
+        }
+
+        const patches = Object.values(desktopRenderer.getCameraVisPatches() || {}).filter(this.patchFilter);
+
+        for (const patch of patches) {
+            patch.show();
+            patch.resetShaderMode();
+        }
+    }
+
+    /**
      * Processes the given historical poses and renders them efficiently
      * @param {Pose[]}  poses - the poses to render
      */
     bulkRenderHistoricalPoses(poses) {
-        if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+        if (realityEditor.humanPose.draw.is2DPoseRendered()) return;
         poses.forEach(pose => {
             this.timeline.appendPose({
                 time: pose.timestamp,
@@ -198,7 +241,7 @@ export class Analytics {
         if (!highlightRegion && this.activeRegionCard) {
             // Unexpectedly deactivated from outside of region card logic
             this.activeRegionCard.displayActive = false;
-            this.activeRegionCard.updateShowButton();
+            this.activeRegionCard.updateDisplayActive();
             this.activeRegionCard = null;
         }
         this.timeline.setHighlightRegion(highlightRegion);
@@ -231,7 +274,10 @@ export class Analytics {
         this.loadingHistory = true;
         this.humanPoseAnalyzer.resetLiveHistoryClones();
         this.humanPoseAnalyzer.resetLiveHistoryLines();
-        await realityEditor.humanPose.loadHistory(region);
+        if (region.startTime >= 0 && region.endTime >= 0) {
+            // Only load history if display region is unbounded, new tools set displayRegion to (Date.now(), -1)
+            await realityEditor.humanPose.loadHistory(region, this);
+        }
         this.loadingHistory = false;
         if (region && !fromSpaghetti) {
             this.humanPoseAnalyzer.setDisplayRegion(region);
@@ -287,11 +333,12 @@ export class Analytics {
         });
 
         for (let desc of regionCardDescriptions) {
-            const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
+            let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             if (poses.length === 0) {
-                continue;
+                let defaultAnalytics = realityEditor.analytics.getDefaultAnalytics();
+                poses = defaultAnalytics.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             }
-            let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses);
+            let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses, desc);
             regionCard.state = RegionCardState.Pinned;
             if (desc.label) {
                 regionCard.setLabel(desc.label);
@@ -319,9 +366,36 @@ export class Analytics {
             regionCard.setLabel('Step ' + this.nextStepNumber);
         }
 
+        let hue = (this.nextStepNumber * 17) % 360;
+        regionCard.setAccentColor(`hsl(${hue}, 100%, 50%)`);
+
         this.nextStepNumber += 1;
 
         this.updateCsvExportLink();
+
+        // wider tolerance for associating local cameravis patches with
+        // potentially remote region cards
+        const patchTolerance = 3000;
+        if (Math.abs(regionCard.endTime - Date.now()) > patchTolerance) {
+            return;
+        }
+
+        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+        if (!desktopRenderer) {
+            return;
+        }
+
+        const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
+        if (!patches) {
+            return;
+        }
+
+        // Hide cloned patches after brief delay to not clutter the space
+        // setTimeout(() => {
+        //     for (const patch of Object.values(patches)) {
+        //         patch.visible = false;
+        //     }
+        // }, patchTolerance);
     }
 
     writeDehydratedRegionCards() {
@@ -353,7 +427,7 @@ export class Analytics {
             this.nextStepNumber += 1;
         }
         setTimeout(() => {
-            regionCard.moveTo(35, 120 + (14 + 14 * 3 + 10) * this.pinnedRegionCards.length);
+            regionCard.moveTo(35, 120 + 240 * this.pinnedRegionCards.length);
         }, 10);
 
         setTimeout(() => {
@@ -383,6 +457,10 @@ export class Analytics {
         ];
         let lines = [header];
         for (let regionCard of this.pinnedRegionCards) {
+            if (regionCard.poses.length === 0) {
+                continue;
+            }
+
             lines.push([
                 regionCard.getLabel(),
                 new Date(regionCard.startTime).toISOString(),
@@ -409,6 +487,10 @@ export class Analytics {
      * @param {RegionCard} activeRegionCard
      */
     setActiveRegionCard(activeRegionCard) {
+        if (this.activeRegionCard) {
+            this.activeRegionCard.displayActive = false;
+            this.activeRegionCard.updateDisplayActive();
+        }
         this.activeRegionCard = activeRegionCard;
     }
 

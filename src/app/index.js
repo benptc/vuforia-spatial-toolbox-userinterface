@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -59,6 +59,14 @@ createNameSpace("realityEditor.app");
  */
 realityEditor.app.getDeviceReady = function(callBack) {
     this.appFunctionCall('getDeviceReady', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
+ * Response with a callback that indicates the base URL for the manager and cloud services.
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getManagerBaseURL = function(callBack) {
+    this.appFunctionCall('getManagerBaseURL', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**
@@ -134,7 +142,7 @@ realityEditor.app.getMatrixStream = function(callBack) {
  * @param {FunctionName} callBack
  */
 realityEditor.app.getPosesStream = function(callBack) {
-    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__, __ARG3__])');
+    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 /**
@@ -396,6 +404,7 @@ realityEditor.app.enableHumanTracking = function () {
  */
 realityEditor.app.disableHumanTracking = function () {
     this.appFunctionCall('disableHumanTracking', null, null);
+    realityEditor.humanPose.deleteLocalHumanObjects();
 };
 
 /**
@@ -480,9 +489,6 @@ realityEditor.app.clearCache = function () {
 realityEditor.app.focusCamera = function() {
     this.appFunctionCall('focusCamera', null, null);
 };
-
-// global shortcut for clearing the cache
-cc = realityEditor.app.clearCache.bind(realityEditor.app);
 
 /**
  ************** SAVE DATA TO DISK ****************

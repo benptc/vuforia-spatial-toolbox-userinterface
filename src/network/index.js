@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -119,6 +119,8 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
     });
 };
 
+realityEditor.network.nodeAddedCallbacks = {};
+
 realityEditor.network.getURL = function(server, identifier, route){
     let protocol = null;
     let url = null;
@@ -184,8 +186,7 @@ realityEditor.network.getPort = function(object) {
     return object.port;
 };
 realityEditor.network.getPortByIp = function(ip) {
-    if (ip === '127.0.0.1' && globalStates.device) {
-        console.debug('switching to mobile-specific server port');
+    if ((ip === '127.0.0.1' || ip === 'localhost') && globalStates.device) {
         return '49369';
     }
 
@@ -229,6 +230,11 @@ realityEditor.network.objectDiscoveredCallbacks = [];
  */
 realityEditor.network.addObjectDiscoveredCallback = function(callback) {
     this.objectDiscoveredCallbacks.push(callback);
+
+    // trigger the callback for existing objects, if added too late
+    for (let [objectKey, object] of Object.entries(objects)) {
+        callback(object, objectKey);
+    }
 };
 
 /**
@@ -514,7 +520,7 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
  */
 realityEditor.network.addHeartbeatObject = function (beat) {
     if (!realityEditor.device.loaded) {
-        console.warn('addHeartbeatObject called before init done', beat);
+        // addHeartbeatObject called before init done
         setTimeout(() => {
             realityEditor.network.addHeartbeatObject(beat);
         }, 500);
@@ -537,15 +543,11 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                 }
             }
 
-            console.log('got heartbeat for new object ' + beat.id);
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
-
-                    console.log('instantiating new object with server data' + beat.id, msg);
-                    
                     // add the object
                     objects[objectKey] = msg;
                     objects[objectKey].ip = beat.ip;
@@ -624,11 +626,6 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  * @param {string} objectKey
  */
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
-
-    const oldCount = Object.keys(origin.frames).length;
-    const newCount = Object.keys(remote.frames).length;
-    console.log(`updateObject ${objectKey} - old has ${oldCount} frames, new has ${newCount}`);
-
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -650,9 +647,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             origin.frames[frameKey].height = remote.frames[frameKey].height || 300;
 
             origin.frames[frameKey].uuid = frameKey;
-
-            console.log('added new frame', origin.frames[frameKey]);
-
+            
             realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
 
         } else {
@@ -692,7 +687,6 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         let visualizationChanged = prevVisualization && newVisualization && prevVisualization !== newVisualization;
         if (globalDOMCache["iframe" + frameKey] && visualizationChanged) {
             if (globalDOMCache["iframe" + frameKey].getAttribute('loaded')) {
-                console.log('reload the frame because visualization changed');
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
@@ -809,14 +803,11 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
                 realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
             }
 
-            // console.log("YES");
             realityEditor.gui.crafting.forceRedraw(globalStates.currentLogic);
 
         }
 
     } else {
-        // console.log("NO");
-
         if (globalDOMCache["iframe" + nodeKey]) {
             if (globalDOMCache["iframe" + nodeKey].getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
@@ -852,7 +843,6 @@ realityEditor.network.onUDPMessage = function(message) {
  * @param {object|string} action
  */
 realityEditor.network.onAction = function (action) {
-    // console.log('onAction');
     var _this = this;
     var thisAction;
     if (typeof action === "object") {
@@ -868,9 +858,6 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (thisAction.lastEditor === globalStates.tempUuid) {
-        // console.log(thisAction.lastEditor);
-        // console.log(globalStates.tempUuid);
-        // console.log("------------------------------------- its my self");
         return;
     }
 
@@ -953,9 +940,7 @@ realityEditor.network.onAction = function (action) {
                         res.nodes = res.objectValues;
                     }
                 }
-
-                console.log("updateObject", objects[objectKey], res, objectKey);
-
+                
                 realityEditor.network.updateObject(objects[objectKey], res, objectKey);
 
                 _this.cout("got object");
@@ -978,8 +963,6 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (typeof thisAction.reloadNode !== "undefined") {
-        console.log("gotdata: " + thisAction.reloadNode.object + " " + thisAction.reloadNode.frame+ " " + thisAction.reloadNode.node);
-       // console.log('http://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + "/node/" + thisAction.reloadNode.node + "/");
        let thisFrame = realityEditor.getFrame(thisAction.reloadNode.object, thisAction.reloadNode.frame);
 
         if (thisFrame !== null) {
@@ -990,9 +973,6 @@ realityEditor.network.onAction = function (action) {
 
             // this.getData(
                 // 'http://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + "/node/" + thisAction.reloadNode.node + "/", thisAction.reloadNode.object, function (req, objectKey, frameKey, nodeKey) {
-
-                    console.log("------------------------------");
-                    console.log(objectKey + "  " + frameKey + " " + nodeKey);
 
                     var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
@@ -1052,13 +1032,10 @@ realityEditor.network.onAction = function (action) {
 
         }
         realityEditor.gui.spatial.checkState()
-        //  console.log(globalStates.spatial);
     }
 
 
     if (thisAction.addFrame) {
-        console.log('addFrame', thisAction.addFrame);
-
         let thisObject = realityEditor.getObject(thisAction.addFrame.objectID);
 
         if (thisObject) {
@@ -1308,7 +1285,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (msgContent.frame && !tempThisObject) {
-        console.log('The tool that sent this message doesn\'t exist - ignore the message', msgContent);
+        console.warn('The tool that sent this message doesn\'t exist - ignore the message', msgContent);
         return;
     }
 
@@ -1501,8 +1478,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (globalStates.sendAcceleration === false) {
                 globalStates.sendAcceleration = true;
                 if (window.DeviceMotionEvent) {
-                    console.log("motion activated");
-
                     window.addEventListener("deviceorientation", function () {
 
                     });
@@ -1529,8 +1504,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
                             Math.abs(thisState.gamma);
 
                     }, false);
-                } else {
-                    console.log("DeviceMotionEvent is not supported");
                 }
             }
         }
@@ -1594,7 +1567,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (msgContent.fullScreen === true) {
 
             tempThisObject.fullScreen = true;
-            console.log("fullscreen: " + tempThisObject.fullScreen);
 
             if (msgContent.fullscreenZPosition) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
@@ -1654,7 +1626,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (msgContent.fullScreen === "sticky") {
 
             tempThisObject.fullScreen = "sticky";
-            console.log("sticky fullscreen: " + tempThisObject.fullScreen);
 
             if (msgContent.fullscreenZPosition) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
@@ -1741,6 +1712,24 @@ realityEditor.network.onInternalPostMessage = function (e) {
             // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
             if (tempThisObject.isFullScreenExclusive) {
                 realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+            }
+        }
+    }
+
+    if (typeof msgContent.full2D !== 'undefined') {
+        if (msgContent.full2D) {
+            // this is useful to make tools from external sites bigger, since we can't manually scale them while full2D is enabled
+            const UPDATE_SCALE_OF_FULL2D_TOOLS = true;
+            if (UPDATE_SCALE_OF_FULL2D_TOOLS) {
+                let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+                realityEditor.gui.ar.positioning.setVehicleScale(activeVehicle, 3.0);
+            }
+            if (globalDOMCache[msgContent.frame]) {
+                globalDOMCache[msgContent.frame].classList.add('deactivatedIframeOverlay');
+            }
+        } else {
+            if (globalDOMCache[msgContent.frame]) {
+                globalDOMCache[msgContent.frame].classList.remove('deactivatedIframeOverlay');
             }
         }
     }
@@ -1859,7 +1848,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);
             globalStates.tempEditingMode = false;
-            console.log('stop editing mode!!!');
             globalStates.unconstrainedSnapInitialPosition = null;
             realityEditor.device.deactivateFrameMove(msgContent.frame);
             let frame = globalDOMCache['iframe' + msgContent.frame];
@@ -1875,8 +1863,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
         let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
 
         activeVehicle.distanceScale = msgContent.visibilityDistance;
-        console.log('visibility distance for ' + activeVehicle.name + ' is set to ' + activeVehicle.visibilityDistance);
-
     }
 
     if (typeof msgContent.moveDelay !== "undefined") {
@@ -1905,7 +1891,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 publicDataCache[msgContent.frame] = {};
             }
             publicDataCache[msgContent.frame][node.name] = msgContent.publicData;
-            //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
             node.publicData = JSON.parse(JSON.stringify(msgContent.publicData));
 
@@ -2010,16 +1995,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.useWebGlWorker !== 'undefined') {
-        console.log('editor got request to use webGlWorker for tool ' + msgContent.frame);
         realityEditor.gui.glRenderer.addWebGlProxy(msgContent.frame);
     }
 
     if (typeof msgContent.attachesTo !== 'undefined') {
         let attachesTo = msgContent.attachesTo;
-        console.log('received ATTACHES TO message from iframe (' + msgContent.frame + ')', msgContent.attachesTo);
 
         if (!attachesTo || !(attachesTo.length >= 1)) {
-            console.warn('ignoring incorrectly formatted attachesTo list');
             return;
         }
 
@@ -2036,8 +2018,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         }
         if (shouldInclude) { return; } // compatible - no need to do anything
-
-        console.log('try to re-attach to new object');
 
         let loyaltyString = attachesTo.includes('object') ? 'object' : (attachesTo.includes('world') ? 'world' : null);
         realityEditor.sceneGraph.setLoyalty(loyaltyString, msgContent.object, msgContent.frame, msgContent.node);
@@ -2133,7 +2113,6 @@ realityEditor.network.createNode = function(objectKey, frameKey, nodeKey, nodeDa
     let frame = realityEditor.getFrame(objectKey, frameKey);
     if (!frame) return;
     if (typeof frame.nodes[nodeKey] !== 'undefined') return; // don't create the node if it already exists
-    console.log('creating node ' + nodeKey);
 
     let node = new Node();
     frame.nodes[nodeKey] = node;
@@ -2162,14 +2141,35 @@ realityEditor.network.createNode = function(objectKey, frameKey, nodeKey, nodeDa
     // post node to server
     let object = realityEditor.getObject(objectKey);
     realityEditor.network.postNewNode(object.ip, objectKey, frameKey, nodeKey, node, (response) => {
-        console.log('postNewNode response: ', response);
         if (!response.node) return;
         
-        let serverNode = JSON.parse(response.node);
+        let serverNode = (typeof response.node === 'string') ? JSON.parse(response.node) : response.node;
         for (let key in serverNode) {
             node[key] = serverNode[key]; // update local node to match server node
         }
+        
+        // trigger onNodeAddedToFrame callbacks
+        let nodeAddedCallbacks = realityEditor.network.nodeAddedCallbacks;
+        if (nodeAddedCallbacks[objectKey] && nodeAddedCallbacks[objectKey][frameKey]) {
+            nodeAddedCallbacks[objectKey][frameKey].forEach(callback => {
+                if (typeof callback !== 'function') return;
+                callback(nodeKey);
+            });
+        }
     });
+}
+
+// allow modules to perform an action in response to the iframe loading and spatialInterface.initNode being processed
+// and the user interface posting the node to the server and the server responding with a success
+realityEditor.network.onNodeAddedToFrame = function(objectKey, frameKey, callback) {
+    let nodeAddedCallbacks = realityEditor.network.nodeAddedCallbacks;
+    if (typeof nodeAddedCallbacks[objectKey] === 'undefined') {
+        nodeAddedCallbacks[objectKey] = {};
+    }
+    if (typeof nodeAddedCallbacks[objectKey][frameKey] === 'undefined') {
+        nodeAddedCallbacks[objectKey][frameKey] = [];
+    }
+    nodeAddedCallbacks[objectKey][frameKey].push(callback);
 }
 
 realityEditor.network.setNodeFullScreen = function(objectKey, frameKey, nodeName, msgContent) {
@@ -2243,9 +2243,7 @@ realityEditor.network.setPinned = function(objectKey, frameKey, isPinned) {
             };
             this.postData(urlEndpoint, content, function(err, _response) {
                 if (err) {
-                    console.warn('error posting to ' + urlEndpoint, err);
-                } else {
-                    console.log('successfully posted to ' + urlEndpoint);
+                    console.warn('error posting setPinned to ' + urlEndpoint, err);
                 }
             })
         }
@@ -2369,7 +2367,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     }
 
     if (msgContent.settings.getDevelopDynamicSettings) {
-        console.log('DEVELOP asked for dynamic settings');
         self.contentWindow.postMessage(JSON.stringify({
             getDevelopDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.DEVELOP)
         }), "*");
@@ -2466,8 +2463,6 @@ realityEditor.network.onFoundObjectButtonMessage = function(msgContent) {
     }
 
     if (msgContent.foundObjectsButton.locateObjects) {
-        console.log('locate objects ' + msgContent.foundObjectsButton.locateObjects);
-
         // split up objectKeys by ip to correctly format the whereIs information
         globalStates.spatial.whereIs = {};
         for (let objectKey in msgContent.foundObjectsButton.locateObjects) {
@@ -2500,10 +2495,7 @@ realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
     var portSuffix = (/(:[0-9]+)$/.test(serverUrl)) ? ('') : (':' + defaultHttpPort);
     var url = prefix + serverUrl + portSuffix + '/allObjects/';
     realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
-        console.log('discoverObjectsFromServer got all objects', msg);
-
         msg.forEach(function(heartbeat) {
-            console.log(heartbeat);
             realityEditor.network.addHeartbeatObject(heartbeat);
         });
     });
@@ -2556,13 +2548,12 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
     this.cout("I am deleting a frame: " + ip);
     var frameToDelete = realityEditor.getFrame(objectKey, frameKey);
     if (frameToDelete) {
-        console.log('deleting ' + frameToDelete.location + ' frame', frameToDelete);
         if (frameToDelete.location !== 'global') {
             console.warn('WARNING: TRYING TO DELETE A LOCAL FRAME');
             return;
         }
     } else {
-        console.log('cant tell if local or global... frame has already been deleted on editor');
+        console.warn('cant tell if local or global... frame has already been deleted on editor');
     }
     var contents = {lastEditor: globalStates.tempUuid};
     this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frames/" + frameKey), contents);
@@ -2576,7 +2567,6 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
  * @param {function} callback
  */
 realityEditor.network.postNewFrame = function(ip, objectKey, contents, callback) {
-    console.log('postNewFrame', ip, objectKey, contents);
     contents.lastEditor = globalStates.tempUuid;
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/addFrame/"), contents, callback);
 };
@@ -2589,7 +2579,6 @@ realityEditor.network.postNewFrame = function(ip, objectKey, contents, callback)
  * @param {object|undefined} contents - currently doesn't need this, can exclude or pass in empty object {}
  */
 realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, contents) {
-    console.log('createCopyOfFrame', ip, objectKey, frameKey, contents);
     contents = contents || {};
     contents.lastEditor = globalStates.tempUuid;
 
@@ -2603,9 +2592,6 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
     };
 
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/"), contents, function(err, response) {
-        console.log(err);
-        console.log(response);
-
         if (err) {
             console.warn('unable to make copy of frame ' + frameKey);
         } else {
@@ -2741,7 +2727,7 @@ realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, cal
                     }
                 } else {
                     // Handle error case
-                    console.log("could not load content for GET:" + url);
+                    console.warn("could not load content for GET:" + url);
                 }
             }
         };
@@ -2871,7 +2857,6 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
 
         } else {
             thisFrameA.links[linkKey] = {
-
                 ObjectA: thisLink.objectA,
                 ObjectB: thisLink.objectB,
                 locationInA: thisLink.nodeA,
@@ -2880,7 +2865,6 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
                 ObjectNameB: namesB
             };
 
-            console.log(thisLink.logicA);
             if (thisLink.logicA !== false || thisLink.logicB !== false) {
                 return;
             }
@@ -2906,8 +2890,8 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
     // generate action for all links to be reloaded after upload
     thisLink.lastEditor = globalStates.tempUuid;
     this.cout("sending Link");
-    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + '/addLink/'), thisLink, function (err, response) {
-        console.log(response);
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + '/addLink/'), thisLink, function (_err, _response) {
+        // console.log(response);
     });
 };
 
@@ -2923,7 +2907,7 @@ realityEditor.network.postNewNode = function (ip, objectKey, frameKey, nodeKey, 
     thisNode.lastEditor = globalStates.tempUuid;
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode'), thisNode, function (err, response) {
         if (err) {
-            console.log('postNewNode error:', err);
+            console.warn('postNewNode error:', err);
         } else if (callback) {
             callback(response);
         }
@@ -3116,7 +3100,6 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         } else {
             urlEndpoint = realityEditor.network.getURL(objects[objectKey].ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/");
         }
-        console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
     }
 
@@ -3192,7 +3175,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         nodes: simpleNodes,
         port: realityEditor.network.getPort(object),
         interface: globalStates.interface,
-        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey)
+        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey),
+        parentLocation: window.location.href
     };
 
     if (version < 170 && objectKey === nodeKey) {
@@ -3221,7 +3205,6 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         }
 
         this.processPendingNodeAdjustments(objectKey, frameKey, node.name, function(objectKey, frameKey, nodeName, msgContent) {
-            console.log('processing pending node adjustment in onElementLoad', frameKey, nodeName, msgContent);
             if (typeof msgContent.nodeIsFullScreen !== 'undefined') {
                 realityEditor.network.setNodeFullScreen(objectKey, frameKey, nodeName, msgContent); // TODO: actually do this after onElementLoad for the node
             }
@@ -3272,7 +3255,6 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
  * @param {{lockPassword: string, lockType: string}} content - lockType is "full" or "half" (see documentation in device/security.js)
  */
 realityEditor.network.postNewLockToNode = function (ip, objectKey, frameKey, nodeKey, content) {
-    console.log("sending node lock (" + content.lockType + ")");
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/addLock/"), content, function () {
     });
 };
@@ -3288,10 +3270,7 @@ realityEditor.network.postNewLockToNode = function (ip, objectKey, frameKey, nod
  */
 realityEditor.network.deleteLockFromNode = function (ip, objectKey, frameKey, nodeKey, password) {
 // generate action for all links to be reloaded after upload
-    console.log("I am deleting a lock: " + ip);
-    console.log("password is " + password);
     this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/password/" + password + "/deleteLock/"));
-    //console.log("deleteLockFromObject");
 };
 
 /**
@@ -3303,9 +3282,7 @@ realityEditor.network.deleteLockFromNode = function (ip, objectKey, frameKey, no
  * @param {{lockPassword: string, lockType: string}} content
  */
 realityEditor.network.postNewLockToLink = function (ip, objectKey, frameKey, linkKey, content) {
-
 // generate action for all links to be reloaded after upload
-    console.log("sending link lock (" + content.lockType + ")");
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/addLock/"), content, function () {
     });
     // postData('http://' +ip+ ':' + httpPort+"/", content);
@@ -3323,10 +3300,7 @@ realityEditor.network.postNewLockToLink = function (ip, objectKey, frameKey, lin
  */
 realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, linkKey, password) {
 // generate action for all links to be reloaded after upload
-    console.log("I am deleting a link lock: " + ip);
-    console.log("lockPassword is " + password);
     this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/password/" + password + "/deleteLock/"));
-    //console.log('delete --- ' + 'http://' + ip + ':' + httpPort + '/object/' + thisObjectKey + "/link/lock/" + thisLinkKey + "/password/" + authenticatedUser);
 };
 
 /**
@@ -3345,10 +3319,7 @@ realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKe
         visualization: newVisualization,
         oldVisualizationPositionData: oldVisualizationPositionData
     };
-    this.postData(urlEndpoint, content, function (err, response) {
-        console.log('set visualization to ' + newVisualization + ' on server');
-        console.log(err, response);
-    });
+    this.postData(urlEndpoint, content, function (_err, _response) {});
 };
 
 /**
@@ -3378,10 +3349,7 @@ realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicD
         lastEditor: globalStates.tempUuid
     };
 
-    this.postData(urlEndpoint, content, function (err, response) {
-        console.log('set publicData to ' + publicData + ' on server');
-        console.log(err, response);
-    });
+    this.postData(urlEndpoint, content, function (_err, _response) {});
 };
 
 /**
@@ -3409,10 +3377,7 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
         group: newGroupID,
         lastEditor: globalStates.tempUuid
     };
-    this.postData(urlEndpoint, content, function (err, response) {
-        console.log('set group to ' + newGroupID + ' on server');
-        console.log(err, response);
-    })
+    this.postData(urlEndpoint, content, function (_err, _response) {})
 };
 
 /**
@@ -3457,9 +3422,7 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
     };
     this.postData(urlEndpoint, content, function(err, _response) {
         if (err) {
-            console.warn('error posting to ' + urlEndpoint, err);
-        } else {
-            console.log('successfully posted to ' + urlEndpoint);
+            console.warn('error posting object position to ' + urlEndpoint, err);
         }
     });
 };
