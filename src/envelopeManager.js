@@ -446,9 +446,10 @@ createNameSpace("realityEditor.envelopeManager");
         }
 
         if (typeof conditionToProceed === 'undefined' || !conditionToProceed()) {
-            console.log('condition not satisfied... retransmit in ' + timeBetweenAttempts + 'ms (' + (numAttemptsLeft-1) + ')');
+            console.log('condition not satisfied... retransmit in ' + (timeBetweenAttempts * 2) + 'ms (' + (numAttemptsLeft-1) + ')');
             setTimeout(function() {
                 numAttemptsLeft--;
+                timeBetweenAttempts = timeBetweenAttempts * 2;
                 if (numAttemptsLeft > 0) {
                     attemptWithRetransmission(callback, conditionToProceed, timeBetweenAttempts, numAttemptsLeft); // keeps checking
                 }
