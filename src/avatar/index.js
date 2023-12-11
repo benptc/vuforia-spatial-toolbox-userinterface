@@ -386,6 +386,7 @@ createNameSpace("realityEditor.avatar");
         let cursorState = {
             matrix: spatialCursorMatrix,
             colorHSL: utils.getColor(myAvatarObject),
+            isColored: realityEditor.spatialCursor.isSpatialCursorOnGroundPlane(),
             worldId: worldId
         }
 
