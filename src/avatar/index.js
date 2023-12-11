@@ -715,7 +715,10 @@ createNameSpace("realityEditor.avatar");
 
     function subscribeToMyAvatarInitialized(callback) {
         // trigger immediately if already initialized
-        
+        if (myAvatarObject) {
+            callback(myAvatarObject);
+        }
+
         callbacks.onMyAvatarInitialized.push(callback);
     }
 
@@ -744,9 +747,7 @@ createNameSpace("realityEditor.avatar");
     exports.setLinkCanvasNeedsClear = (value) => {
         linkCanvasNeedsClear = value;
     }
-    
     exports.subscribeToMyAvatarInitialized = subscribeToMyAvatarInitialized;
-    // exports.onMyAvatarDeleted = onMyAvatarDeleted;
     exports.subscribeToMyUsernameUpdated = subscribeToMyUsernameUpdated;
 
 }(realityEditor.avatar));

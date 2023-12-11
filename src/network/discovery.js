@@ -94,8 +94,6 @@ createNameSpace("realityEditor.network.discovery");
             ignoreFromPause = !exceptions.some(name => message.id.includes(name));
         }
 
-        // console.log('processHeartbeat (ignore? = ' + ignoreFromPause + ')');
-
         if (realityEditor.device.environment.variables.suppressObjectDetections || ignoreFromPause || isSystemInitializing) {
             // only add it if we don't already have the same one pending
             const alreadyInArray = queuedHeartbeats.some(existingMessage => {
@@ -173,22 +171,17 @@ createNameSpace("realityEditor.network.discovery");
 
     function waitForNewWorld(objectName) {
         // console.log('waitForNewWorld named ' + objectName);
-        // heartbeatsPaused = true; // pause heartbeats
         exceptions.push(objectName);
         addPausedObjectDetectionsFlag('waitForNewWorld');
     }
     exports.waitForNewWorld = waitForNewWorld;
-    
+
     function doneWaitingForWorld(worldId) {
         primaryWorld = {
             ip: null,
             id: worldId
         };
-        
         clearPausedObjectDetectionsFlag('waitForNewWorld');
-        // // resumeObjectDetections
-        // heartbeatsPaused = false;
-        // processNextQueuedHeartbeat();
     }
     exports.doneWaitingForWorld = doneWaitingForWorld;
 

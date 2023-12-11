@@ -136,8 +136,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         if (!shouldStartDownloadingFiles(objectHeartbeat)) {
             if (realityEditor.gui.ar.anchors.isAnchorHeartbeat(objectHeartbeat)) {
                 realityEditor.gui.ar.anchors.createAnchorFromHeartbeat(objectHeartbeat);
-            // } else if (realityEditor.worldObjects.isEmptyWorldHeartbeat(objectHeartbeat)) {
-               // realityEditor.worldObjects.initializeEmptyWorldObject(objectHeartbeat)
             } else {
                 onDownloadFailed(); // reschedule this attempt for later
             }
@@ -194,8 +192,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         realityEditor.worldObjects.checkIsEmptyWorldHeartbeat(objectHeartbeat).then((res) => {
             return res.json();
         }).then(body => {
-            console.log('fileExists', body);
-            
+            // console.log('fileExists', body);
             if (body.exists) {
                 // THIS IS THE REGULAR / MOST COMMON PATH TO TAKE:
                 // downloads the vuforia target.xml file if it doesn't have it yet

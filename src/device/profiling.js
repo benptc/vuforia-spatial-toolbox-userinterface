@@ -130,13 +130,11 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
 
         profilerSettingsUI.addOrUpdateLabel(processTitle, options.labelText || processTitle);
 
-        if (options.displayTimeout && options.displayTimeout > 0) {
-            // remove after 3 seconds if no updates between now and then
-            setTimeout(() => {
-                // TODO: if logging as part of stopTime with aggregate, don't remove later labels when earlier labels' timeouts trigger
-                profilerSettingsUI.removeLabel(processTitle);
-            }, options.displayTimeout);
-        }
+        // remove after 3 seconds if no updates between now and then
+        setTimeout(() => {
+            // TODO: if logging as part of stopTime with aggregate, don't remove later labels when earlier labels' timeouts trigger
+            profilerSettingsUI.removeLabel(processTitle);
+        }, options.displayTimeout);
     }
 
     function logProcessCount(processTitle) {
