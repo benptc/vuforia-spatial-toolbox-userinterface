@@ -343,10 +343,11 @@ realityEditor.device.onload = async function () {
         realityEditor.sceneGraph.initService();
         realityEditor.gui.glRenderer.initService();
         realityEditor.gui.threejsScene.initService();
+        realityEditor.measure.clothSimulation.initService();
         // realityEditor.device.multiclientUI.initService();
         realityEditor.avatar.initService();
         realityEditor.humanPose.initService();
-        realityEditor.analytics.initService();
+        realityEditor.motionStudy.initService();
         realityEditor.oauth.initService();
         realityEditor.spatialCursor.initService();
         realityEditor.gui.spatialIndicator.initService();
@@ -357,7 +358,7 @@ realityEditor.device.onload = async function () {
         // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
         console.error('error in initService functions, might lead to corrupted app state', initError);
         try {
-            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 5000);
+            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 30000);
         } catch (alertError) {
             alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
         }
