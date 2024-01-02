@@ -145,6 +145,11 @@ createNameSpace("realityEditor.device.keyboardEvents");
         keyboardCurrentlyOpen = false;
     }
 
+    /**
+     * Returns true if a tool (other than a full2D tool) is currently using the keyboard
+     * Can be used to disable keyboard from triggering shortcuts while typing in a tool
+     * @returns {boolean}
+     */
     function isKeyboardActive() {
         return keyboardCurrentlyOpen;
     }
