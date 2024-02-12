@@ -195,7 +195,7 @@ realityEditor.gui.ar.draw.registerCallback = function(functionName, callback) {
 
 /**
  * The most recently received set of matrices for the currently visible objects.
- * A set of {objectId: matrix} pairs, one per recognized marker
+ * A set of {objectId: matrix} pairs, one per recognized target
  * @type {Object.<string, Array.<number>>}
  */
 realityEditor.gui.ar.draw.visibleObjectsCopy = {};
@@ -249,9 +249,9 @@ realityEditor.gui.ar.draw.prevSuppressedObjectRendering = false;
 realityEditor.gui.ar.draw.prevSuppressedToolRendering = false;
 
 /**
- * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
+ * Previously triggered directly by the native app when the AR engine updates with a new set of recognized targets,
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
- * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
+ * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized target
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // processed the suppressedObjectRendering, as this is the strictest mode that hides all content and ignores the render loop
@@ -1140,7 +1140,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             }
 
             // set initial position of frames and nodes placed in from pocket
-            // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
+            // 1. drop directly onto target plane if in freeze state (or quick-tapped the frame)
             // 2. otherwise float in unconstrained slightly in front of the editor camera
             // 3. animate so it looks like it is being pushed from pocket
             if (activePocketNodeWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
@@ -1543,9 +1543,9 @@ realityEditor.gui.ar.draw.debugDrawVehicle = function(activeVehicle, finalMatrix
 };
 
 /**
- * Temporarily disabled function that will snap the frame to the marker plane
+ * Temporarily disabled function that will snap the frame to the target plane
  * (by removing its rotation components) if the amount of rotation is very small
- * @todo: only do this if it is also close to the marker plane in the Z direction
+ * @todo: only do this if it is also close to the target plane in the Z direction
  * @param {Frame|Node} activeVehicle
  * @param {string} activeKey
  */
