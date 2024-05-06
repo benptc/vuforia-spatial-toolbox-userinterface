@@ -19,3 +19,4 @@ coverage/
 
 /src/assistant/config.js
 /src/ai/APIKeys.js
+/src/motionStudy/config.js
