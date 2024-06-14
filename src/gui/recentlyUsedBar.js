@@ -448,10 +448,16 @@ class LineToFrameAnimation {
 
         // TODO: ideally there will be a cleaner API to get the spatialReference
         let spatialReference = realityEditor.ai.chatInterface.spatialUuidMapper.spatialReferenceMap[this.hoveredFrameId];
+        let simpleReference = realityEditor.ai.chatInterface.spatialUuidMapper.simpleSpatialReferenceMap[this.hoveredFrameId];
         if (spatialReference) {
             // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
             let position3d = realityEditor.gui.threejsScene.convertToVector3(spatialReference.position);
             frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(position3d);
+        } else if (simpleReference) {
+            // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
+            let position3d = realityEditor.gui.threejsScene.convertToVector3(simpleReference.position);
+            frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(position3d);
+            // TODO: support simple references pointing to dynamic linked entities
         } else {
             frameScreenPosition = this.hoveredFrameId ?
                 realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :

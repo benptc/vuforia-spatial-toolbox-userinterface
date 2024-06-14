@@ -6,6 +6,11 @@ export class MotionStudySensors {
         this.playbackActivation = {};
         this.sensorPaletteIndex = 0;
         this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
+        this.callbacks = {
+            onSensorAdded: [],
+            onSensorDeleted: [],
+            onSensorMoved: [],
+        };
     }
 
     attachListeners() {
@@ -17,6 +22,9 @@ export class MotionStudySensors {
         if (!this.sensors[frame]) {
             this.setSensorColor(frame, this.getSensorPaletteColor(this.sensorPaletteIndex));
             this.sensorPaletteIndex += 1;
+            this.callbacks.onSensorAdded.forEach(cb => cb(frame));
+        } else {
+            this.callbacks.onSensorMoved.forEach(cb => cb(frame));
         }
         this.sensors[frame] = position;
     }
@@ -121,5 +129,7 @@ export class MotionStudySensors {
         }
         delete this.sensors[event.frameKey];
         delete this.sensorColors[event.frameKey];
+
+        this.callbacks.onSensorMoved.forEach(cb => cb(event.frameKey));
     }
 }

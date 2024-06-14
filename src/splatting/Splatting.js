@@ -38,6 +38,9 @@ const manualAlignmentMatrix =
 const manualAlignmentMatrix_ptcFurniture1 = manualAlignmentMatrix;
 HARDCODED_SPLAT_COUNTS_ALIGNMENTS[1682141] = manualAlignmentMatrix_ptcFurniture1;
 
+// pull from the core addon, edge server, user interface
+// re-record with the flat sensors
+
 /**
  * Builds a projection matrix from field of view, aspect ratio, and near and far planes
  */
@@ -1015,7 +1018,7 @@ async function main(initialFilePath) {
                     realityEditor.spatialCursor.gsToggleRaycast(false);
                     break FBORendering;
                 }
-                realityEditor.spatialCursor.gsToggleRaycast(false);
+                realityEditor.spatialCursor.gsToggleRaycast(true);
                 // render to frame buffer object texture
                 gl.uniform1i(u_uIsGSRaycasting, 1);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, fb);

@@ -1,6 +1,8 @@
 createNameSpace("realityEditor.ai");
 
 import { ChatInterface } from './ChatInterface.js';
+import { WordLinker } from './WordLinker.js';
+// import { SyntaxHighlightingTextInput } from './SyntaxHighlightingTextInput.js';
 
 /**
  * @fileOverview - Note: most of the AI system has been refactored to ChatInterface.js and associated classes
@@ -12,6 +14,8 @@ import { ChatInterface } from './ChatInterface.js';
     
     let callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('ai');
     let chatInterface = null;
+    let wordLinker = null;
+    // let syntaxHighlightingTextInput = null;
 
     function registerCallback(functionName, callback) {
         if (!callbackHandler) {
@@ -77,6 +81,7 @@ import { ChatInterface } from './ChatInterface.js';
     let aiContainer;
     let endpointArea, apiKeyArea;
     let searchTextArea;
+    let aiInputArea;
     let dialogueContainer;
     
     let keyPressed = {
@@ -91,6 +96,7 @@ import { ChatInterface } from './ChatInterface.js';
         apiKeyArea = document.getElementById('ai-api-key-text-area');
         searchTextArea = document.getElementById('searchTextArea');
         searchTextArea.style.display = 'none'; // initially, before inputting endpoint and api key, hide the search text area
+        aiInputArea = document.getElementById('aiInputArea');
         dialogueContainer = document.getElementById('ai-chat-tool-dialogue-container');
 
         map = realityEditor.ai.mapping;
@@ -153,8 +159,9 @@ import { ChatInterface } from './ChatInterface.js';
     function showDialogue() {
         aiContainer.style.animation = `slideToRight 0.2s ease-in forwards`;
         setTimeout(() => {
-            let searchArea = document.getElementById('searchTextArea');
-            searchArea.focus();
+            // let searchArea = document.getElementById('searchTextArea');
+            // searchArea.focus();
+            aiInputArea.focus();
         }, 500);
     }
     
@@ -191,47 +198,65 @@ import { ChatInterface } from './ChatInterface.js';
         //     // adjustTextAreaSize();
         // });
         
-        searchTextArea.addEventListener('pointerdown', (e) => {e.stopPropagation();});
-        searchTextArea.addEventListener('pointerup', (e) => {e.stopPropagation();});
-        searchTextArea.addEventListener('pointermove', (e) => {e.stopPropagation();});
-        searchTextArea.addEventListener('contextmenu', (e) => {e.stopPropagation();});
-
-        searchTextArea.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-            adjustTextAreaSize();
-            
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                keyPressed['Enter'] = true;
-
-                if (keyPressed['Shift'] === true) {
-                    searchTextArea.value += '\n';
-                    adjustTextAreaSize();
-                    return;
-                }
-
-                pushMyDialogue(searchTextArea.value);
-                clearMyDialogue();
-                adjustTextAreaSize();
-            } else if (e.key === 'Shift') {
-                e.preventDefault();
-                keyPressed['Shift'] = true;
-
-                if (keyPressed['Enter'] === true) {
-                    searchTextArea.value += '\n';
-                    adjustTextAreaSize();
-                }
-            }
+        [aiInputArea].forEach(area => {
+            area.addEventListener('pointerdown', (e) => {e.stopPropagation();});
+        });
+        [aiInputArea].forEach(area => {
+            area.addEventListener('pointerup', (e) => {e.stopPropagation();});
+        });
+        [aiInputArea].forEach(area => {
+            area.addEventListener('pointermove', (e) => {e.stopPropagation();});
+        });
+        [aiInputArea].forEach(area => {
+            area.addEventListener('contextmenu', (e) => {e.stopPropagation();});
         });
 
-        searchTextArea.addEventListener('keyup', (e) => {
-            e.stopPropagation();
-            
-            if (e.key === 'Enter') {
-                keyPressed['Enter'] = false;
-            } else if (e.key === 'Shift') {
-                keyPressed['Shift'] = false;
-            }
+        [aiInputArea].forEach(area => {
+            area.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                adjustTextAreaSize();
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    keyPressed['Enter'] = true;
+
+                    if (keyPressed['Shift'] === true) {
+                        // searchTextArea.innerHTML += '\n';
+                        // searchTextArea.value += '\n';
+                        adjustTextAreaSize();
+                        return;
+                    }
+
+                    // pushMyDialogue(searchTextArea.value);
+
+                    let processedInput = replaceSpansWithUserData(searchTextArea);
+                    // let processedInput = replaceSpansWithUserData(aiInputArea.firstChild);
+
+                    pushMyDialogue(processedInput);
+                    // pushMyDialogue(searchTextArea.innerHTML);
+                    clearMyDialogue();
+                    adjustTextAreaSize();
+                } else if (e.key === 'Shift') {
+                    e.preventDefault();
+                    keyPressed['Shift'] = true;
+
+                    if (keyPressed['Enter'] === true) {
+                        adjustTextAreaSize();
+                    }
+                }
+            });
+        });
+
+        [aiInputArea].forEach(area => {
+            area.addEventListener('keyup', (e) => {
+                e.stopPropagation();
+
+                if (e.key === 'Enter') {
+                    keyPressed['Enter'] = false;
+                } else if (e.key === 'Shift') {
+                    keyPressed['Shift'] = false;
+                }
+            });
         });
 
         window.addEventListener('blur', () => {
@@ -246,60 +271,223 @@ import { ChatInterface } from './ChatInterface.js';
         window.addEventListener('resize', () => {
             adjustTextAreaSize();
         });
+        
+        // addLinkingFunctionalityToUserInput();
+
+        // document.getElementById('searchTextArea').addEventListener('click', function() {
+        //     document.getElementById('aiInputArea').focus();
+        // });
+
+        // Usage
+        // let _hereAndThereLinker = new WordLinker('searchTextArea');
+        wordLinker = new WordLinker('aiInputArea', 'searchTextArea');
+
+        // syntaxHighlightingTextInput = new SyntaxHighlightingTextInput('aiInputArea');
+        //
+        // syntaxHighlightingTextInput.addSyntaxRule(/\b(now)\b/gi, (match) => {
+        //     console.log(`process rule for ${match}`);
+        //     return {
+        //         textReplacement: `<span style="color: greenyellow;" data-user-input="${new Date().toISOString()}">${match}</span>`,
+        //         metadata: { timestamp: new Date().toISOString() }
+        //     };
+        // });
+        //
+        // syntaxHighlightingTextInput.addSyntaxRule(/\b(here|there)\b/gi, (match) => {
+        //     let cursorPosition = getMyCursorPosition();
+        //     return {
+        //         textReplacement: `<span style="color: cyan;" data-user-input="${cursorPosition}">${match}</span>`,
+        //         metadata: {position: cursorPosition}
+        //     };
+        // });
+        //
+        // syntaxHighlightingTextInput.addSyntaxRule(/\b(communication|spatialDraw|thingview)\b/gi, (match) => {
+        //     let toolPosition = JSON.stringify([0,0,0]); // TODO: get tool position or toolID //getMyCursorPosition();
+        //     return {
+        //         textReplacement: `<span style="color: yellow;" data-user-input="${toolPosition}">${match}</span>`,
+        //         metadata: {position: toolPosition}
+        //     };
+        // });
+        // window.textInput = syntaxHighlightingTextInput;
     }
+
+    function getMyCursorPosition() {
+        let myAvatarId = realityEditor.avatar.getMyAvatarId();
+        let myAvatarObject = realityEditor.getObject(myAvatarId);
+        if (!myAvatarObject) return null;
+        let avatarNodePath = realityEditor.avatar.utils.getAvatarNodeInfo(myAvatarObject);
+        let node = realityEditor.getNode(avatarNodePath.objectKey, avatarNodePath.frameKey, avatarNodePath.nodeKey);
+        let userProfile = node.publicData.userProfile;
+        let cursorState = node.publicData.cursorState;
+        // return realityEditor.avatar.utils.getAvatarName();
+        return JSON.stringify([Math.round(cursorState.matrix.elements[12]),
+            Math.round(cursorState.matrix.elements[13]),
+            Math.round(cursorState.matrix.elements[14])]);
+    }
+    
+    // let dataStructure = [];
+    //
+    // function addLinkingFunctionalityToUserInput() {
+    //     const searchTextArea = document.getElementById('searchTextArea');
+    //
+    //     // Initial content load (if there's initial content to process)
+    //     searchTextArea.innerHTML = recomputeInnerHTML(searchTextArea.innerText, dataStructure);
+    //
+    //     searchTextArea.addEventListener('keyup', function(e) {
+    //         const text = this.innerText;
+    //         const words = text.split(' ');
+    //         const lastWord = words[words.length - 1];
+    //
+    //         if (e.key === ' ' && (lastWord.trim() === 'here' || lastWord.trim() === 'there')) {
+    //             const previousElement = this.childNodes[this.childNodes.length - 1];
+    //             if (previousElement.nodeType === 3) {  // Node.TEXT_NODE is 3
+    //                 const userInput = prompt('Please enter data for "' + lastWord.trim() + '"');
+    //                 if (userInput) {
+    //                     const span = document.createElement('span');
+    //                     span.style.color = 'cyan';
+    //                     span.dataset.userInput = userInput;
+    //                     span.innerText = lastWord.trim() + ' ';
+    //                     words[words.length - 1] = span.outerHTML;
+    //                     this.innerHTML = words.join(' ') + ' ';  // Ensure space after span
+    //                     placeCaretAtEnd(this);
+    //
+    //                     // Update dataStructure
+    //                     dataStructure = updateDataStructure(this.innerHTML, dataStructure);
+    //                 }
+    //             }
+    //         }
+    //     });
+    //
+    //     searchTextArea.addEventListener('input', function(e) {
+    //         // Update dataStructure
+    //         dataStructure = updateDataStructure(this.innerHTML, dataStructure);
+    //         // Remove spans if their content is modified
+    //         removeInvalidSpans(this);
+    //     });
+    //
+    //     function placeCaretAtEnd(el) {
+    //         el.focus();
+    //         if (typeof window.getSelection != "undefined" && typeof document.createRange != "undefined") {
+    //             const range = document.createRange();
+    //             range.selectNodeContents(el);
+    //             range.collapse(false);
+    //             const sel = window.getSelection();
+    //             sel.removeAllRanges();
+    //             sel.addRange(range);
+    //         } else if (typeof document.body.createTextRange != "undefined") {
+    //             const textRange = document.body.createTextRange();
+    //             textRange.moveToElementText(el);
+    //             textRange.collapse(false);
+    //             textRange.select();
+    //         }
+    //     }
+    //
+    //     function updateDataStructure(innerHTML, dataStructure) {
+    //         const tempDiv = document.createElement('div');
+    //         tempDiv.innerHTML = innerHTML;
+    //
+    //         let newDataStructure = [];
+    //         let idCounters = { 'here': 0, 'there': 0 };
+    //
+    //         tempDiv.childNodes.forEach(node => {
+    //             if (node.nodeType === 3) {  // Node.TEXT_NODE is 3
+    //                 const words = node.textContent.split(' ');
+    //                 words.forEach(word => {
+    //                     if (word === 'here' || word === 'there') {
+    //                         const id = word + idCounters[word]++;
+    //                         newDataStructure.push({ id: id, wordMatch: word, associatedData: '' });
+    //                     }
+    //                 });
+    //             } else if (node.nodeType === 1 && node.tagName === 'SPAN') {  // Node.ELEMENT_NODE is 1
+    //                 const wordMatch = node.innerText.trim();
+    //                 const associatedData = node.dataset.userInput;
+    //                 const id = wordMatch + idCounters[wordMatch]++;
+    //                 newDataStructure.push({ id: id, wordMatch: wordMatch, associatedData: associatedData });
+    //             }
+    //         });
+    //
+    //         return newDataStructure;
+    //     }
+    //
+    //     function recomputeInnerHTML(rawUserText, dataStructure) {
+    //         const words = rawUserText.split(' ');
+    //         let html = '';
+    //         let idCounters = { 'here': 0, 'there': 0 };
+    //
+    //         words.forEach(word => {
+    //             if (word === 'here' || word === 'there') {
+    //                 const id = word + idCounters[word]++;
+    //                 const entry = dataStructure.find(e => e.id === id);
+    //                 if (entry) {
+    //                     html += `<span style="color: cyan;" data-user-input="${entry.associatedData}">${word}</span> `;
+    //                 } else {
+    //                     html += word + ' ';
+    //                 }
+    //             } else {
+    //                 html += word + ' ';
+    //             }
+    //         });
+    //
+    //         return html.trim();
+    //     }
+    //
+    //     function removeInvalidSpans(el) {
+    //         const spans = el.querySelectorAll('span[data-user-input]');
+    //         spans.forEach(span => {
+    //             const word = span.innerText.trim();
+    //             if (word !== 'here' && word !== 'there') {
+    //                 // Replace span with its text content
+    //                 span.outerHTML = span.innerText;
+    //             }
+    //         });
+    //     }
+    // }
 
     let originalHeight = null;
     function initTextAreaSize() {
-        originalHeight = searchTextArea.scrollHeight;
+        originalHeight = aiInputArea.scrollHeight;
     }
     
     function adjustTextAreaSize() {
-        // searchTextArea.style.flexShrink = '1';
-        // searchTextArea.style.height = 'auto';
-        if (searchTextArea.scrollHeight > window.innerHeight / 4) {
-            searchTextArea.style.height = (window.innerHeight / 4) + 'px';
+        // aiInputArea.style.flexShrink = '1';
+        // aiInputArea.style.height = 'auto';
+        if (aiInputArea.scrollHeight > window.innerHeight / 4) {
+            aiInputArea.style.height = (window.innerHeight / 4) + 'px';
         } else {
-            searchTextArea.style.height = (searchTextArea.scrollHeight) + 'px';
+            aiInputArea.style.height = (aiInputArea.scrollHeight) + 'px';
             // todo Steve: this function is buggy, doesn't return the smallest scroll height of the text box
         }
-        // searchTextArea.style.flexShrink = '0';
+        // aiInputArea.style.flexShrink = '0';
     }
     
     function resetTextAreaSize() {
         if (originalHeight === null) {
-            originalHeight = searchTextArea.scrollHeight;
-            searchTextArea.style.height = originalHeight + 'px';
+            originalHeight = aiInputArea.scrollHeight;
+            aiInputArea.style.height = originalHeight + 'px';
         } else {
-            searchTextArea.style.height = originalHeight + 'px';
+            aiInputArea.style.height = originalHeight + 'px';
         }
-    }
-    
-    function pushToolDialogue(frames, result) {
-        let d = document.createElement('div');
-        d.classList.add('ai-chat-tool-dialogue', 'ai-chat-tool-dialogue-ai', 'ai-chat-tool-dialogue-tools');
-        d.innerText = `Here are all the ${result} tools:`;
-        
-        for (let frame of frames) {
-            let b = document.createElement('button');
-            let frameKey = frame.uuid;
-            b.innerText = `${frame.src} tool`;
-            b.addEventListener('click', () => {
-                focusOnFrame(frameKey);
-            });
-            d.appendChild(b);
-        }
-        
-        dialogueContainer.append(d);
-        scrollToBottom();
     }
 
     function getMostRecentMessage() {
         if (dialogueContainer.childElementCount === 0) return null;
         let mostRecentMessageDiv = dialogueContainer.lastChild;
+
         return {
             role: "user",
             content: `${map.preprocess(mostRecentMessageDiv.innerHTML)}`
         }
+    }
+
+    function replaceSpansWithUserData(divContainingFormattedText) {
+        let htmlContent = divContainingFormattedText.innerHTML;
+
+        // Regular expression to match each span with its data-user-input attribute
+        const regex = /<span[^>]*data-user-input="([^"]*)"[^>]*>([^<]*)<\/span>/g;
+
+        // Replace each span with the value of its data-user-input attribute
+        htmlContent = htmlContent.replace(regex, (match, userData) => `location of ${userData}`);
+
+        return htmlContent;
     }
 
     function pushMyDialogue(text) {
@@ -333,7 +521,10 @@ import { ChatInterface } from './ChatInterface.js';
     }
 
     function clearMyDialogue() {
-        searchTextArea.value = '';
+        // syntaxHighlightingTextInput.clear();
+        // aiInputArea.innerHTML = '';
+        // aiInputArea.innerHTML = '';
+        wordLinker.clearAll();
         resetTextAreaSize();
     }
 

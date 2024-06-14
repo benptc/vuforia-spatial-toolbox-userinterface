@@ -70,6 +70,18 @@ export class MotionStudy {
 
         this.videoPlayer = null;
 
+        this.sensors.callbacks.onSensorAdded.push(() => {
+            setTimeout(() => {
+                this.updateSummarizedState();
+            }, 500);
+        });
+        this.sensors.callbacks.onSensorMoved.push(() => {
+            this.updateSummarizedState();
+        });
+        this.sensors.callbacks.onSensorDeleted.push(() => {
+            this.updateSummarizedState();
+        });
+
         this.draw = this.draw.bind(this);
 
         requestAnimationFrame(this.draw);
@@ -588,6 +600,12 @@ export class MotionStudy {
         });
 
         this.sortPinnedRegionCards();
+
+        try {
+            this.updateSummarizedState();
+        } catch (e) {
+            console.warn(`error updating summarizedState of motionStudy for frame ${this.frame}, sensors ${JSON.stringify(this.sensors)}`);
+        }
     }
 
     getPosesInTimeIntervalWithFallback(startTime, endTime) {
@@ -832,13 +850,24 @@ export class MotionStudy {
         });
         summary += cardSummaries.join(' ');
 
-        summary += '\n' + this.getSummarizedTimelineState();
+        if (this.sensors.getSensorFrames().length > 0) {
+            summary += '\n\n' + 'This analytics process may have some "spatial sensors" that record when a tracked person' +
+                'walks into or out of a particular bounding box in space. When asked to calculate or analyze time or motion' +
+                'of tracked people between locations, please default to using this data to answer. For example, to calculate the time ' +
+                'taken to move from sensor A to B, look for the last "left sensor A" event prior to the first subsequent "entered sensor B" event. ' +
+                // 'To calculate the duration of time spent in a particular sensor C, sum the times between the '
+                'Here is the log of enter/exit events, measured from the starting time of the session:';
+            summary += '\n' + this.getSummarizedTimelineState();
+        } else {
+            summary += '\nThis analytics process has no "spatial sensors" analyzing specific timing of motion between locations, yet.';
+        }
 
         console.log('summary', summary);
         realityEditor.ai.updateSummarizedState(this.frame, summary);
     }
 
     getSummarizedTimelineState() {
+        if (!this.lastDisplayRegion) { return }
         const allPoses = this.getPosesInTimeIntervalWithFallback(
             this.lastDisplayRegion.startTime,
             this.lastDisplayRegion.endTime,
@@ -854,12 +883,164 @@ export class MotionStudy {
         events.sort((a, b) => {
             return a.time - b.time;
         });
+        
+        // const filterEvents2 = (events, threshold) => {
+        //     const filteredEvents = [];
+        //     const pending = {};
+        //    
+        //     events.forEach(event => {
+        //         const sensor = event.sensor;
+        //         const time = event.time;
+        //    
+        //         if (event.enter) {
+        //           if (pending[sensor] && !pending[sensor].enter && (time - pending[sensor].time < threshold)) {
+        //             // Remove the enter:false event from pending
+        //             delete pending[sensor];
+        //           }
+        //           // Add enter:true event to pending
+        //           pending[sensor] = event;
+        //           filteredEvents.push(event);
+        //         } else {
+        //           if (pending[sensor] && pending[sensor].enter && (time - pending[sensor].time < threshold)) {
+        //             // Remove the enter:true event from pending
+        //             delete pending[sensor];
+        //           } else {
+        //             // Add enter:false event to pending
+        //             pending[sensor] = event;
+        //             filteredEvents.push(event);
+        //           }
+        //         }
+        //     });
+        //    
+        //     // return filteredEvents;
+        //     // Removing any trailing enter events without a matching exit event
+        //     return filteredEvents.filter(event => {
+        //         const sensor = event.sensor;
+        //         if (event.enter && pending[sensor] && pending[sensor].enter === event.enter) {
+        //             delete pending[sensor];
+        //             return false;
+        //         }
+        //         return true;
+        //     });
+        // };
+        
+        const filterEvents = (events, threshold = 1000) => {
+            const filteredEvents = [];
+            const prev = {};
+            
+            events.forEach(event => {
+                let isFirstEvent = !prev[event.sensor];
+                let prevWasExit = isFirstEvent ? false : !prev[event.sensor].enter;
+                let timeSincePrev = isFirstEvent ? Infinity : Math.abs(prev[event.sensor].time - event.time);
+
+                if (event.enter) {
+                    if (isFirstEvent) {
+                        filteredEvents.push(event);
+                        prev[event.sensor] = event;
+                    } else {
+                        if (prevWasExit && timeSincePrev > threshold) {
+                            filteredEvents.push(event);
+                            prev[event.sensor] = event;
+                        }
+                    }
+                } else {
+                    if (!isFirstEvent) {
+                        if (!prevWasExit && timeSincePrev > threshold) {
+                            filteredEvents.push(event);
+                            prev[event.sensor] = event;
+                        }
+                    }
+                }
+            });
+            
+            console.log(filteredEvents);
+            return filteredEvents;
+        };
+
+        // filter out "flicker" events where it goes in and out multiple times in the same second
+        // events = filterEvents(events, 500);
+        
+        events = this.processEvents(events, 500);
+
         const startTime = this.lastDisplayRegion.startTime;
         return events.map(event => {
             let dir = event.enter ? 'entered' : 'left';
             return ` - ${Math.round((event.time - startTime) / 1000)} seconds: the person ${dir} ${event.sensor}`;
         }).join('\n');
     }
+
+    processEvents(events, threshold = 500) {
+        // Split the events by sensor
+        const eventsBySensor = events.reduce((acc, event) => {
+            if (!acc[event.sensor]) acc[event.sensor] = [];
+            acc[event.sensor].push(event);
+            return acc;
+        }, {});
+
+        const processedEventsBySensor = {};
+
+        for (const [sensor, events] of Object.entries(eventsBySensor)) {
+            // Convert to occupancy durations
+            const occupancyDurations = [];
+            for (let i = 0; i < events.length; i += 2) {
+                const startEvent = events[i];
+                const endEvent = events[i + 1];
+                if (endEvent) {
+                    occupancyDurations.push({
+                        occupied: startEvent.enter,
+                        start: startEvent.time,
+                        stop: endEvent.time,
+                        sensor: sensor
+                    });
+                }
+            }
+
+            // Filter out short durations
+            const filteredDurations = occupancyDurations.filter(duration => {
+                return (duration.stop - duration.start) >= threshold;
+            });
+
+            // Convert back to enter/exit events
+            const filteredEvents = [];
+            filteredDurations.forEach(duration => {
+                filteredEvents.push({
+                    enter: duration.occupied,
+                    time: duration.start,
+                    sensor: duration.sensor
+                });
+                filteredEvents.push({
+                    enter: !duration.occupied,
+                    time: duration.stop,
+                    sensor: duration.sensor
+                });
+            });
+
+            processedEventsBySensor[sensor] = filteredEvents;
+        }
+
+        // Combine and sort the events
+        const finalEvents = Object.values(processedEventsBySensor).flat();
+        finalEvents.sort((a, b) => a.time - b.time);
+
+        return finalEvents;
+    }
+
+// // Example usage
+//     const events = [
+//         { enter: true, time: 1, name: 'A' },
+//         { enter: false, time: 1.5, name: 'A' },
+//         { enter: true, time: 1.6, name: 'A' },
+//         { enter: false, time: 1.8, name: 'A' },
+//         { enter: true, time: 2, name: 'A' },
+//         { enter: false, time: 3, name: 'A' },
+//         { enter: true, time: 10, name: 'B' },
+//         { enter: false, time: 12, name: 'B' },
+//         { enter: true, time: 13, name: 'B' },
+//         { enter: false, time: 13.5, name: 'B' }
+//     ];
+//
+//     console.log(processEvents(events));
+
 
     getSensorEvents(sensorFrame, poses) {
         let lastPoseActive = false; // creates a default 'entered' event if the sensor was already active

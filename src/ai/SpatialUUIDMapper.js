@@ -19,6 +19,23 @@
 export class SpatialUUIDMapper {
     constructor() {
         this.spatialReferenceMap = {};
+        this.simpleSpatialReferenceMap = {}; // these are used just to map syntax-highlighted words to corresponding locations
+    }
+
+    /**
+     * Associates an ID with either a static position, or with the position of a linked entity. Provide one or the other.
+     * @param {string} referenceId
+     * @param {Object|null} staticPosition
+     * @param {string|null} entityId
+     */
+    updateSimpleSpatialReference(referenceId, staticPosition, entityId = null) {
+        if (!referenceId) return;
+        if (!staticPosition && !entityId) return; // don't provide neither
+        if (staticPosition && entityId) return; // don't provide both
+        this.simpleSpatialReferenceMap[referenceId] = {
+            position: staticPosition,
+            entityId
+        }
     }
 
     updateSpatialReference(data) {

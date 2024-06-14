@@ -39,7 +39,7 @@ export class NetworkInterface {
                 },
                 function (err, res) {
                     if (err) {
-                        console.warn();
+                        console.warn(err.error);
                         reject(`/ai/init error: ${err}`);
                     } else {
                         if (res.answer === 'success') {

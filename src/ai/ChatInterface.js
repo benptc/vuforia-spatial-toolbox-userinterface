@@ -135,7 +135,7 @@ export class ChatInterface {
                     if (res.answer && processedAnswer) {
                         realityEditor.ai.displayAnswer(processedAnswer);
                     } else {
-                        realityEditor.ar.displayAnswer('error');
+                        realityEditor.ai.displayAnswer('error');
                     }
                 }
             } catch(err) {
