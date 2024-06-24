@@ -441,6 +441,8 @@ class LineToFrameAnimation {
         // if we stop hovering, draw a receding animation back to the last hovered icon element
         if (!this.hoveredFrameId && !this.lastAnimationPositions) return;
 
+        // if (this.startFromAI) return; // NOTE: this is what to do to show or hide the line
+
         let frameScreenPosition = {
             x: 0,
             y: 0

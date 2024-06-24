@@ -822,11 +822,16 @@ export class MotionStudy {
     updateSummarizedState() {
         let title = this.getTitle();
         let operationCount = this.pinnedRegionCards.length;
-        let summary = `The process plan's motion study is labeled "${title}" and contains ${operationCount} operations. `;
+        let firstCardStart = this.pinnedRegionCards[0].startTime;
+        let lastCardEnd = this.pinnedRegionCards[this.pinnedRegionCards.length - 1].endTime;
+        let entireDuration = Math.round((lastCardEnd - firstCardStart) / 1000) + ' seconds';
+        let summary = `The process plan's motion study is labeled "${title}" and contains ${operationCount} operations, lasting ${entireDuration}. `;
         let cardSummaries = this.pinnedRegionCards.map((card, i) => {
             let cardSummary = `Operation ${i} is "${card.getLabel()}", `;
             let duration = Math.round((card.endTime - card.startTime) / 1000) + ' seconds';
             cardSummary += `took ${duration} to complete, `;
+            // let startTime = this.humanPoseAnalyzer.clones.historical[0].pose.timestamp;
+            cardSummary += `(started at ${Math.round((card.startTime - firstCardStart) / 1000)} seconds and ended at ${Math.round((card.endTime - firstCardStart) / 1000)} seconds) `;
             if (card.step) {
                 let prefix = `was planned in `;
                 if (card.step.laborTimeSeconds > 0.5) { // Interesting non-zero planned time
