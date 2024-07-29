@@ -36,6 +36,188 @@ createNameSpace("realityEditor.network.frameContentAPI");
             frame.sendCoordinateSystems = msgContent;
             console.log('frame was told to send coordinate systems', frame.sendCoordinateSystems);
         });
+
+        // add handler for tools to programmatically store the current camera position/direction
+        realityEditor.network.addPostMessageHandler('requestTextInput', (msgContent, fullMessageData) => {
+            try {
+                let existingCard = document.getElementById('apiTextInputCard');
+                if (existingCard) {
+                    // throw new Error('There is already a text input pending, cant ask for another yet.');
+
+                    // send error message into the frame that requested the capture
+                    realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                        textInputError: {
+                            reason: 'There is already a text input pending, cant ask for another yet.'
+                        }
+                    });
+                    return;
+                }
+
+                // let cameraPerspective = getCameraPositionDirection();
+                addInputNameCard(msgContent.modalTitle, msgContent.modalDescription, (textResult) => {
+                    // send texture and depth texture to the frame that requested the capture
+                    realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                        textInputData: textResult
+                    });
+                    removeTextInputCard();
+                }, () => {
+                    // throw new Error('The user cancelled the text input.');
+
+                    // send error message into the frame that requested the capture
+                    realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                        textInputError: {
+                            reason: 'The user cancelled the text input.'
+                        }
+                    });
+                    removeTextInputCard();
+                });
+
+            } catch (e) {
+                // send error message into the frame that requested the capture
+                realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                    textInputError: {
+                        reason: e.message
+                    }
+                });
+                removeTextInputCard();
+            }
+        });
+    }
+
+    function removeTextInputCard() {
+        let existingCard = document.getElementById('text-input-view-card-container');
+        if (existingCard) {
+            existingCard.parentElement.removeChild(existingCard);
+        }
+    }
+
+    let viewCardContainer = null;
+    function addInputNameCard(modalTitle = 'Enter Text', modalDescription = '', onConfirm, onCancel) {
+        if (!viewCardContainer) {
+            viewCardContainer = document.createElement('div');
+            viewCardContainer.id = 'text-input-view-card-container';
+        }
+        viewCardContainer.innerHTML = '';
+        document.body.appendChild(viewCardContainer);
+
+        let innerHTML = `
+            <h3>${modalTitle}</h3>
+            ${modalDescription ? `<p>${modalDescription}</p>` : ''}
+<!--            <p>Set a name to identify this metaverse.</p>-->
+        `;
+        // const defaultName = this.getDefaultName();
+        let card = constructCardDom(innerHTML, 'Confirm', 'Cancel'); //new PopUpModal(innerHTML, 'Set Metaverse Name', 'Use Default Name');
+        card.id = 'apiTextInputCard';
+        // card.style.position = 'absolute';
+        
+        function addViewCard() {
+            let card = document.createElement('div');
+            card.classList.add('viewCard');
+            return card;
+        }
+
+        function addCardDarkButton(id, innerText, parent, onPointerDown) {
+            if (innerText !== null) {
+                let button = document.createElement('div');
+                button.id = id;
+                button.classList.add('cardButtonDark');
+                button.innerText = innerText;
+                // this.addClickEventListener(button, onPointerDown);
+                button.addEventListener('pointerdown', onPointerDown);
+                parent.appendChild(button);
+                return button;
+            }
+        }
+        function addCardLightButton(id, innerText, parent, onPointerDown) {
+            if (innerText !== null) {
+                let button = document.createElement('div');
+                button.id = id;
+                button.classList.add('cardButtonLight');
+                button.innerText = innerText;
+                // this.addClickEventListener(button, onPointerDown);
+                button.addEventListener('pointerdown', onPointerDown);
+                parent.appendChild(button);
+                return button;
+            }
+        }
+        
+        function constructCardDom(innerHTML, confirmLabel, cancelLabel) {
+            let card = addViewCard();
+            card.classList.add('center', 'popUpModal');
+
+            let cardText = document.createElement('div');
+            cardText.classList.add('popUpModalText');
+            cardText.innerHTML = innerHTML;
+            card.appendChild(cardText);
+
+            /* Added div for 'children' and other elements for modal. In the future the input element of
+             TextInputModal.js could be added here */
+            let cardChildElements = document.createElement('div');
+            cardChildElements.classList.add('popUpModalElementsDiv');
+            card.appendChild(cardChildElements);
+
+            if (confirmLabel !== null) {
+                let confirmButton = addCardDarkButton('confirmModalButton', confirmLabel, card, () => {
+                    // this.triggerButtonCallbacks('confirmModalButton', { button: exitButton });
+                    console.log('confirm');
+                    onConfirm(input.value);
+                    // viewCardContainer.removeChild(card);
+                    removeTextInputCard();
+                });
+                // this.setupButtonVisualFeedback(exitButton, 'introButtonPressed');
+                confirmButton.style.pointerEvents = 'auto';
+            }
+
+            if (cancelLabel !== null) {
+                let cancelButton = addCardLightButton('cancelModalButton', cancelLabel, card, () => {
+                    // this.triggerButtonCallbacks('cancelModalButton', { button: cancelButton });
+                    console.log('cancel');
+                    onCancel();
+                    // viewCardContainer.removeChild(card);
+                    removeTextInputCard();
+                });
+                // this.setupButtonVisualFeedback(cancelButton, 'introButtonPressed');
+                cancelButton.style.pointerEvents = 'auto';
+            }
+            return card;
+        }
+
+        //Create an input element
+        let input = document.createElement('input');
+        input.setAttribute('type', 'text');
+        input.setAttribute('placeholder', 'Enter text...');
+        input.classList.add('popUpModalTextInput');
+
+        input.addEventListener('keydown', function(event) {
+            // Do something with the event, for example, log the key
+            // console.log('Input field key:', event.key);
+            // Stop the event from propagating to the document
+            event.stopPropagation();
+        });
+
+        //Add the input element to the child elements div in PopUpModal.js
+        let cardBody = card.querySelector('.popUpModalElementsDiv'); //card.dom.getElementsByClassName('popUpModalElementsDiv');
+        cardBody.appendChild(input);
+
+        // card.registerButtonCallback('confirmModalButton', () => {
+        //     if (input.value.length > 0) {
+        //         // this.tryUpload(input.value);
+        //         // this.currentState = this.STATES.UPLOAD_IMAGE;
+        //         // this.render();
+        //         console.log('confirm');
+        //     }
+        // });
+        // card.registerButtonCallback('cancelModalButton', () => {
+        //     // if (input.value === defaultName) {
+        //     //     this.tryUpload(input.value);
+        //     //     this.currentState = this.STATES.UPLOAD_IMAGE;
+        //     //     this.render();
+        //     // } else {
+        //     //     input.value = defaultName;
+        //     // }
+        //     console.log('cancel');
+        // });
+        viewCardContainer.appendChild(card);
     }
 
     function sendCoordinateSystemsToIFrame(objectKey, frameKey) {
