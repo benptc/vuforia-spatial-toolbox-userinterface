@@ -470,13 +470,13 @@ createNameSpace("realityEditor.app.targetDownloader");
             window.localStorage.removeItem('realityEditor.previousDownloadInfo.' + objectId);
         }
 
-        if (!isPingPending) {
-            setTimeout(function () {
-                realityEditor.app.sendUDPMessage({action: 'ping'});
-                isPingPending = false;
-            }, MIN_MILLISECONDS_BETWEEN_ATTEMPTS);
-            isPingPending = true;
-        }
+        // if (!isPingPending) {
+        //     setTimeout(function () {
+        //         realityEditor.app.sendUDPMessage({action: 'ping'});
+        //         isPingPending = false;
+        //     }, MIN_MILLISECONDS_BETWEEN_ATTEMPTS);
+        //     isPingPending = true;
+        // }
     }
 
     /**
@@ -485,7 +485,8 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @return {boolean}
      */
     function isObjectTargetInitialized(objectID) {
-        return targetDownloadStates[objectID] && targetDownloadStates[objectID].TARGET_ADDED === DownloadState.SUCCEEDED;
+        return (targetDownloadStates[objectID] && targetDownloadStates[objectID].TARGET_ADDED === DownloadState.SUCCEEDED)
+            || realityEditor.avatar.utils.isAvatarObject(objects[objectID]);
     }
 
     /**

@@ -551,6 +551,8 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
     realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode, thisNode.matrix);
 };
 
+let pendingHeartbeatAdds = {};
+
 /**
  * Looks at an object heartbeat, and if the object hasn't been added yet, downloads it and initializes all appropriate state
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
@@ -564,8 +566,10 @@ realityEditor.network.addHeartbeatObject = function (beat) {
         return;
     }
 
-    if (beat && beat.id) {
-        if (!objects[beat.id]) {
+    if (beat && beat.id && beat.id !== '_WORLD_local') {
+        if (!objects[beat.id] && !pendingHeartbeatAdds[beat.id]) {
+            
+            pendingHeartbeatAdds[beat.id] = beat;
 
             // ignore this object if it's a world object and the primaryWorld is set but not equal to this one
             // we make sure to ignore it before triggering the GET request, otherwise we might overload the network
@@ -579,6 +583,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     return;
                 }
             }
+            
+            console.log(`addHeartbeatObject: ${beat.id}`);
 
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
@@ -604,16 +610,20 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
                     // check if onNewServerDetected callbacks should be triggered
                     realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
+
+                    delete pendingHeartbeatAdds[beat.id];
                 }
             });
         } else {
             // if we receive a heartbeat of an object that has been created but it still needs targets
             // try to re-download its target data if possible/necessary
             var isInitialized = realityEditor.app.targetDownloader.isObjectTargetInitialized(beat.id) || // either target downloaded
-                beat.id === realityEditor.worldObjects.getLocalWorldId(); // or it's the _WORLD_local
+                beat.id === realityEditor.worldObjects.getLocalWorldId(); // || // or it's the _WORLD_local
+                // realityEditor.avatar.utils.isAvatarObject(objects[beat.id]);
 
             if (!isInitialized && realityEditor.app.targetDownloader.isObjectReadyToRetryDownload(beat.id, beat.tcs)) {
                 setTimeout(function() {
+                    console.log(`addHeartbeatObject downloadAvailableTargetFiles: ${beat.id}`);
                     realityEditor.app.targetDownloader.downloadAvailableTargetFiles(beat);
                 }, 1000);
             }

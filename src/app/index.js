@@ -270,6 +270,7 @@ realityEditor.app.getUDPMessages = function(callBack) {
  * @param {Object} message - must be a JSON object
  */
 realityEditor.app.sendUDPMessage = function(message) {
+    console.log('sendUDPMessage');
     if (realityEditor.network.state.proxyNetwork) {
         if (realityEditor.cloud.socket && message.action) {
             realityEditor.cloud.socket.action('udp/action', message);

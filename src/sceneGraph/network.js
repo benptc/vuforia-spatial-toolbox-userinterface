@@ -102,6 +102,8 @@ createNameSpace("realityEditor.sceneGraph.network");
 
         let object = realityEditor.getObject(sceneNode.id);
         if (!object) { return; }
+        
+        if (object.type === 'world') return; // TODO: ben this is temporary, turn it back on
 
         uploadInfo[sceneNode.id] = {
             localMatrix: sceneNode.localMatrix,

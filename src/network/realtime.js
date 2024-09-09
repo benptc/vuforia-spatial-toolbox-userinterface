@@ -518,6 +518,7 @@ createNameSpace("realityEditor.network.realtime");
 
         // first, send a /subscribe message to the server to tell it that this client should be notified of publicData updates
         let subscribeTitle = realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/realityEditorPublicData');
+        console.log('/subscribe/realityEditorPublicData');
         serverSocket.emit(subscribeTitle, JSON.stringify({
             object: objectKey,
             frame: frameKey
@@ -569,6 +570,17 @@ createNameSpace("realityEditor.network.realtime");
         // public data of all nodes across all objects (as long as we set up the right callbacks by multiple calls of the code above)
         if (!didSubscribeToPublicDataOnServer[object.ip]) {
             didSubscribeToPublicDataOnServer[object.ip] = true;
+
+            serverSocket.emit(realityEditor.network.getIoTitle(object.port, '/subscribe/objectUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+
+            // // first, send a /subscribe message to the server to tell it that this client should be notified of publicData updates
+            // let subscribeTitle = realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorPublicData');
+            // console.log('/subscribe/realityEditorPublicData');
+            // serverSocket.emit(subscribeTitle, JSON.stringify({
+            //     object: object.objectId,
+            //     // frame: frameKey
+            // }));
+            
             let publicDataTitle = realityEditor.network.getIoTitle(objects[object.objectId].port, 'object/publicData');
             const listener = (msg) => {
                 let msgData = JSON.parse(msg);
@@ -710,7 +722,8 @@ createNameSpace("realityEditor.network.realtime");
             if(realityEditor.network.state.proxyNetwork) {
                 serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
             }
-            serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/objectUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+            // serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/objectUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+            setupPublicDataSubscriptionOnServerIfNeeded(objectKey, serverSocket);
             serverSocket.on('/update/object/matrix', callback);
         }
     }

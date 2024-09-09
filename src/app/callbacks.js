@@ -98,11 +98,11 @@ createNameSpace('realityEditor.app.callbacks');
         realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
 
         // send three action UDP pings to start object discovery
-        for (var i = 0; i < 3; i++) {
-            setTimeout(function () {
-                realityEditor.app.sendUDPMessage({action: 'ping'});
-            }, 500 * i); // space out each message by 500ms
-        }
+        // for (var i = 0; i < 3; i++) {
+        //     setTimeout(function () {
+        //         realityEditor.app.sendUDPMessage({action: 'ping'});
+        //     }, 500 * i); // space out each message by 500ms
+        // }
 
         // in case engine was started for the second time, add any targets back to engine from the first instance
         realityEditor.app.targetDownloader.reinstatePreviouslyAddedTargets();
@@ -151,6 +151,8 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {string|object} message
      */
     function receivedUDPMessage(message) {
+        console.log('receivedUDPMessage');
+
         if (!exports.acceptUDPBeats && !message.network) {
             return;
         }

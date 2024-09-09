@@ -10,7 +10,8 @@ const filesPathToExclude = filesNeedToExclude.map((src) => {
 });
 
 export default defineConfig({
-  plugins: [{
+    base: './',  // This ensures Vite generates relative paths for assets
+    plugins: [{
       name: 'transform-add-three-preload',
       transformIndexHtml: {
           enforce: 'post',

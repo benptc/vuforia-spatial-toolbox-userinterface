@@ -207,7 +207,7 @@ createNameSpace("realityEditor.avatar");
 
         setInterval(() => {
             if (myAvatarId && myAvatarObject) {
-                network.keepObjectAlive(myAvatarId);
+                // network.keepObjectAlive(myAvatarId);
             }
         }, KEEP_ALIVE_HEARTBEAT_INTERVAL);
 
@@ -298,9 +298,9 @@ createNameSpace("realityEditor.avatar");
                 refreshStatusUI();
 
                 // ping the server to discover the object more quickly
-                for (let i = 0; i < 3; i++) {
-                    setTimeout(() => realityEditor.app.sendUDPMessage({action: 'ping'}), 300 * i * i);
-                }
+                // for (let i = 0; i < 3; i++) {
+                //     setTimeout(() => realityEditor.app.sendUDPMessage({action: 'ping'}), 300 * i * i);
+                // }
             }, (err) => {
                 console.warn('unable to add avatar object to server', err);
                 connectionStatus.didCreationFail = true;
