@@ -1174,29 +1174,57 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
             // but we want all of them to have a positive value so they are rendered in front of background canvas
             // and frames with developer=false should have the lowest positive value
-            
+
             finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
+
+            const MAINTAIN_CONSTANT_SCREEN_SIZE = false;
 
             if (activeVehicle.alwaysFaceCamera === true) {
                 // this gives a pretty good billboard effect, as long as you aren't looking from top-down
                 let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
                 let modelViewMatrix = [];
                 utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
-
+            
                 // In AR mode, we need to use this lookAt method, because camera up vec doesn't always match scene up vec
                 if (realityEditor.device.environment.isARMode()) {
                     utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
                 } else {
-                    // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
-                    // so let's correct the scale and remove the rotation – this works on desktop because camera up = scene up
-                    let scale = realityEditor.sceneGraph.getSceneNodeById(activeKey).getVehicleScale();
-                    let constructedModelViewMatrix = [
-                        scale, 0, 0, 0,
-                        0, -scale, 0, 0,
-                        0, 0, scale, 0,
-                        modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
-                    ];
-                    utilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                    // Check if the constant screen size mode is enabled
+                    if (MAINTAIN_CONSTANT_SCREEN_SIZE === true) {
+                        // Compute the depth (z-value in view space)
+                        let depth = -modelViewMatrix[14]; // Negative because of right-handed coordinate system
+            
+                        // Use the constant scale factor provided, or default to 1.0
+                        let desiredScreenSize = 0.0001; // activeVehicle.constantScale || 1.0;
+            
+                        // Calculate the scale factor to keep the element's size constant on screen
+                        let scale = depth * desiredScreenSize;
+            
+                        // Construct a new ModelView matrix with the updated scale
+                        let constructedModelViewMatrix = [
+                            scale, 0,     0,    0,
+                            0,    -scale, 0,    0,
+                            0,    0,     scale, 0,
+                            modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
+                        ];
+            
+                        // Multiply the constructed matrix with the projection matrix to get the final matrix
+                        utilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                    } else {
+                        // Use the normal scaling based on the element's scale in 3D space
+                        let scale = realityEditor.sceneGraph.getSceneNodeById(activeKey).getVehicleScale();
+            
+                        // Construct the ModelView matrix with the normal scale
+                        let constructedModelViewMatrix = [
+                            scale, 0, 0, 0,
+                            0, -scale, 0, 0,
+                            0, 0, scale, 0,
+                            modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
+                        ];
+            
+                        // Multiply the constructed matrix with the projection matrix to get the final matrix
+                        utilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                    }
                 }
             }
 

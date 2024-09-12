@@ -380,11 +380,12 @@ createNameSpace("realityEditor.envelopeManager");
     function updateMinimizeButtonPosition(viewportLeft, viewportTop) {
         let breathingRoom = 5;
         let minimizeButton = document.getElementById('minimizeEnvelopeButton');
+        let buttonSize = realityEditor.device.environment.variables.envelopeCloseButtonSize || 50;
         if (minimizeButton) {
             if (!viewportLeft) {
-                minimizeButton.style.left = 90 + 'px';
+                minimizeButton.style.left = buttonSize + 40 + 'px';
             } else {
-                minimizeButton.style.left = (60 + viewportLeft + breathingRoom) + 'px';
+                minimizeButton.style.left = (buttonSize + 10 + viewportLeft + breathingRoom) + 'px';
             }
             if (!viewportTop) {
                 minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
@@ -403,6 +404,11 @@ createNameSpace("realityEditor.envelopeManager");
         
         let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         updateExitButtonPosition(viewportBbox.left, viewportBbox.top);
+        
+        if (realityEditor.device.environment.variables.envelopeCloseButtonSize) {
+            exitButton.style.width = realityEditor.device.environment.variables.envelopeCloseButtonSize + 'px';
+            exitButton.style.height = realityEditor.device.environment.variables.envelopeCloseButtonSize + 'px';
+        }
 
         document.body.appendChild(exitButton);
 
@@ -425,6 +431,11 @@ createNameSpace("realityEditor.envelopeManager");
 
         let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         updateMinimizeButtonPosition(viewportBbox.left, viewportBbox.top);
+
+        if (realityEditor.device.environment.variables.envelopeCloseButtonSize) {
+            minimizeButton.style.width = realityEditor.device.environment.variables.envelopeCloseButtonSize + 'px';
+            minimizeButton.style.height = realityEditor.device.environment.variables.envelopeCloseButtonSize + 'px';
+        }
 
         document.body.appendChild(minimizeButton);
 
@@ -471,6 +482,10 @@ createNameSpace("realityEditor.envelopeManager");
             if (exitButton) exitButton.style.display = 'none';
             callbacks.onExitButtonHidden.forEach(cb => cb(exitButton, minimizeButton));
         }
+
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        updateMinimizeButtonPosition(viewportBbox.left, viewportBbox.top);
+        updateExitButtonPosition(viewportBbox.left, viewportBbox.top);
     }
 
     exports.onExitButtonHidden = (callback) => {

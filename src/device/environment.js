@@ -95,6 +95,7 @@ createNameSpace("realityEditor.device.environment");
         dontRenderMinimizedIcons: false,
         dontRenderEnvelopeButtons: false,
         dontRenderAvatarStatusUI: false,
+        envelopeCloseButtonSize: null,
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property
