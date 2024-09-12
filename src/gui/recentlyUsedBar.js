@@ -356,11 +356,13 @@ class RecentlyUsedBar {
         }
     }
 
-    resizeCanvas() {
+    resizeCanvas({width, height, left, top}) {
         if (this.canvas !== undefined) {
-            this.canvas.width = window.innerWidth;
-            this.canvas.height = window.innerHeight;
+            this.canvas.width = width;
+            this.canvas.height = height;
         }
+        this.canvas.style.left = left + 'px';
+        this.canvas.style.top = top + 'px';
     }
 
     renderCanvas() {

@@ -811,7 +811,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     // gets the width of the usable portion of the screen for the pocket
     function getWidth() {
         let guiButtonDiv = document.getElementById('guiButtonDiv');
-        let usableScreenWidth = window.innerWidth;
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        let usableScreenWidth = viewportBbox.width;
         if (guiButtonDiv) {
             let clientRects = guiButtonDiv.getClientRects();
             if (clientRects && clientRects[0]) {

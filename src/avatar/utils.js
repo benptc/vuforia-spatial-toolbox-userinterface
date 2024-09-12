@@ -25,6 +25,12 @@ createNameSpace("realityEditor.avatar.utils");
     // returns a random but consistent color for a provided avatar object's editorId
     exports.getColor = function(avatarObject) {
         if (!this.isAvatarObject(avatarObject)) { return null; }
+        if (realityEditor.device.environment.variables.myAvatarColorOverrideHSL) {
+            if (avatarObject.objectId === realityEditor.avatar.getMyAvatarId()) {
+                return realityEditor.device.environment.variables.myAvatarColorOverrideHSL;
+            }
+        }
+            
         let editorId = avatarObject.objectId.split('_AVATAR_')[1].split('_')[0];
         let id = Math.abs(this.hashCode(editorId));
         return `hsl(${(id % Math.PI) * 360 / Math.PI}, 100%, 50%)`;

@@ -89,6 +89,12 @@ createNameSpace("realityEditor.device.environment");
         overrideAreaTargetScanningUI: false, // hide the default status textfield for the area target scanning
         // colors
         groundWireframeColor: 'rgb(0, 255, 255)',
+        hideCameraModePrompts: false, // turn this on to prevent camera controls from showing on screen
+        myAvatarColorOverrideHSL: null, // set this to a color string to always make your spatial cursor, etc, a certain color
+        dontRenderMyBeams: false,
+        dontRenderMinimizedIcons: false,
+        dontRenderEnvelopeButtons: false,
+        dontRenderAvatarStatusUI: false,
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property

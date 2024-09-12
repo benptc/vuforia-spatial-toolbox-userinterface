@@ -34,6 +34,8 @@ class EnvelopeIconRenderer {
     }
 
     initService() {
+        if (realityEditor.device.environment.variables.dontRenderMinimizedIcons) return;
+
         this.gui = document.getElementById('GUI');
 
         realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface

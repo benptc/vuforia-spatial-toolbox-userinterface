@@ -407,9 +407,10 @@ createNameSpace("realityEditor.sceneGraph");
             return realityEditor.gui.ar.positioning.getProjectedCoordinates(frameCoordinateVector, finalCSSMatrices[activeKey]);
         }
         console.warn(activeKey + ' hasn\'t been processed in the sceneGraph yet in order to get correct screen position');
+        let viewportCenter = realityEditor.device.layout.getViewportCenter();
         return {
-            x: window.innerWidth/2,
-            y: window.innerHeight/2
+            x: viewportCenter.x,
+            y: viewportCenter.y
         }
     }
 
@@ -674,9 +675,10 @@ createNameSpace("realityEditor.sceneGraph");
      * @returns {{x: number, y: number, z: number}} - position in ROOT coordinates, or whatever coordinateSystem is specified
      */
     function getPointAtDistanceFromCamera(screenX, screenY, distance, coordinateSystem = rootNode, camNode = cameraNode) {
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         let distanceRaycastVector = [
-            (screenX / window.innerWidth) * 2.0 - 1,
-            - (screenY / window.innerHeight) * 2.0 + 1,
+            (screenX / viewportBbox.width) * 2.0 - 1,
+            - (screenY / viewportBbox.height) * 2.0 + 1,
             0,
             1
         ];

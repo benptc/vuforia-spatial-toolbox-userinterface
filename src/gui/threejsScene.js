@@ -95,7 +95,8 @@ import { getPendingCapture } from './sceneCapture.js';
         const domElement = document.getElementById('mainThreejsCanvas');
         mainRenderer = new Renderer(domElement);
 
-        defaultCamera = new DefaultCamera("Default Camera", window.innerWidth / window.innerHeight);
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        defaultCamera = new DefaultCamera("Default Camera", viewportBbox.width / viewportBbox.height);
         webXRCamera = null; // can only be initilized if we have a webxr session
         mainRenderer.add(defaultCamera); // Normally not needed, but needed in order to add child objects relative to camera
         mainRenderer.setCamera(defaultCamera);
@@ -139,7 +140,7 @@ import { getPendingCapture } from './sceneCapture.js';
         })
 
         cssRenderer = new CSS2DRenderer();
-        cssRenderer.setSize(window.innerWidth, window.innerHeight);
+        cssRenderer.setSize(viewportBbox.width, viewportBbox.height);
         const css3dCanvas = cssRenderer.domElement;
         css3dCanvas.id = 'three-js-scene-css-3d-renderer';
         // set the position style and pointer events none to complete the setup
@@ -683,9 +684,10 @@ import { getPendingCapture } from './sceneCapture.js';
      * @returns {Vector3} - position relative to camera
      */
     function getPointAtDistanceFromCamera(clientX, clientY, distance) {
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         distanceRaycastVector.set(
-            ( clientX / window.innerWidth ) * 2 - 1,
-            - ( clientY / window.innerHeight ) * 2 + 1,
+            ( clientX / viewportBbox.width ) * 2 - 1,
+            - ( clientY / viewportBbox.height ) * 2 + 1,
             0
         );
         distanceRaycastVector.unproject(mainRenderer.getCamera().getInternalObject());
@@ -1249,6 +1251,13 @@ import { getPendingCapture } from './sceneCapture.js';
 
         return new THREE.Vector3(x, y, z);
     }
+    
+    function getRaycastIntersects(screenX, screenY, objectsToCheck) {
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        let clientX = screenX - viewportBbox.left;
+        let clientY = screenY - viewportBbox.top;
+        return mainRenderer.getRaycastIntersects(clientX, clientY, objectsToCheck);
+    }
 
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
@@ -1260,7 +1269,7 @@ import { getPendingCapture } from './sceneCapture.js';
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
     exports.getScreenRay = (clientX, clientY) => {return mainRenderer.getScreenRay(clientX, clientY)};
-    exports.getRaycastIntersects = (clientX, clientY, objectsToCheck) => {return mainRenderer.getRaycastIntersects(clientX, clientY, objectsToCheck)};
+    exports.getRaycastIntersects = getRaycastIntersects; // = (clientX, clientY, objectsToCheck) => {return mainRenderer.getRaycastIntersects(clientX, clientY, objectsToCheck)};
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
     exports.getObjectsByName = getObjectsByName;

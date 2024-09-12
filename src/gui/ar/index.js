@@ -181,10 +181,14 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     ];
     
     var multiplier = -1;
+    
+    let viewportSize = realityEditor.device.layout.getViewportBoundingBox();
+    let viewportWidth = viewportSize.width || globalStates.height;
+    let viewportHeight = viewportSize.height || globalStates.width;
 
     var viewportScaling = [
-        globalStates.height, 0, 0, 0,
-        0,  multiplier * globalStates.width, 0, 0,
+        viewportWidth, 0, 0, 0,
+        0,  multiplier * viewportHeight, 0, 0,
         0, 0, 1, 0,
         corX-5, corY+10, 0, 1
     ];

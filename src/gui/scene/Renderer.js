@@ -124,7 +124,8 @@ class Renderer {
     constructor(domElement) {
         this.#renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: true});
         this.#renderer.setPixelRatio(window.devicePixelRatio);
-        this.#renderer.setSize(window.innerWidth, window.innerHeight);
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        this.#renderer.setSize(viewportBbox.width, viewportBbox.height);
         this.#renderer.outputEncoding = THREE.sRGBEncoding;
         if (this.#renderer.xr && !realityEditor.device.environment.isARMode()) {
             this.#renderer.xr.enabled = true;
@@ -141,8 +142,13 @@ class Renderer {
         this.#globalScale = new GlobalScale(1000, 0.001);
         this.#scene.add(this.#globalScale.getNode());
 
-        realityEditor.device.layout.onWindowResized(({width, height}) => {
+        realityEditor.device.layout.onWindowResized(({width, height, left, top}) => {
             this.#renderer.setSize(width, height);
+            // TODO: set left and top offset to domElement? here or elsewhere?
+            domElement.style.width = width + 'px';
+            domElement.style.height = height + 'px';
+            domElement.style.left = left + 'px';
+            domElement.style.top = top + 'px';
         });
 
         this.#setupLighting();
@@ -265,9 +271,10 @@ class Renderer {
      * @return {Ray}
      */
     getScreenRay(clientX, clientY) {
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         let mouse = new THREE.Vector2();
-        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
-        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
+        mouse.x = ( clientX / viewportBbox.width ) * 2 - 1;
+        mouse.y = - ( clientY / viewportBbox.height ) * 2 + 1;
         this.#raycaster.setFromCamera( mouse, this.#camera.getInternalObject() );
         return this.#raycaster.ray;
     }
@@ -283,9 +290,12 @@ class Renderer {
      * @returns {Intersection[]}
      */
     getRaycastIntersects(clientX, clientY, objectsToCheck) {
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         let mouse = new THREE.Vector2();
-        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
-        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
+        mouse.x = ( clientX / viewportBbox.width ) * 2 - 1;
+        mouse.y = - ( clientY / viewportBbox.height ) * 2 + 1;
+        
+        // console.log(`getRaycastIntersects: (${mouse.x.toFixed(3)}, ${mouse.y.toFixed(3)})`);
 
         //2. set the picking ray from the camera position and mouse coordinates
         this.#raycaster.setFromCamera( mouse, this.#camera.getInternalObject() );

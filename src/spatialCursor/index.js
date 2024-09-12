@@ -405,11 +405,13 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
         if (!realityEditor.gui.ar.utilities.isValidMatrix4x4(spatialCursorMatrix)) {
             spatialCursorMatrix = null;
         }
+        
+        let viewportCenter = realityEditor.device.layout.getViewportCenter();
 
         let addedElement = realityEditor.gui.pocket.createFrame(toolName, {
             noUserInteraction: true,
-            pageX: window.innerWidth / 2,
-            pageY: window.innerHeight / 2,
+            pageX: viewportCenter.x,
+            pageY: viewportCenter.y,
             initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
             onUploadComplete: () => {
                 realityEditor.network.postVehiclePosition(addedElement);
@@ -420,7 +422,7 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
         });
 
         if (!moveToCursor && !spatialCursorMatrix) {
-            let worldCenterPoint = await getRaycastCoordinates(window.innerWidth/2, window.innerHeight/2);
+            let worldCenterPoint = await getRaycastCoordinates(viewportCenter.x, viewportCenter.y);
             if (worldCenterPoint.point === undefined) {
                 let rotateCenterId = 'rotateCenter'+'_VISUAL_ELEMENT';
                 if (realityEditor.sceneGraph.getSceneNodeById(rotateCenterId) !== undefined) {
@@ -512,8 +514,9 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
             let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
             lastScreenX = mousePosition.x;
             lastScreenY = mousePosition.y;
-            screenX = window.innerWidth / 2;
-            screenY = window.innerHeight / 2;
+            let viewportCenter = realityEditor.device.layout.getViewportCenter();
+            screenX = viewportCenter.x;
+            screenY = viewportCenter.y;
         });
 
         realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
@@ -629,10 +632,11 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
         isUpdateLoopRunning = true;
 
         try {
+            let viewportCenter = realityEditor.device.layout.getViewportCenter();
             // for iPhone usage, keep spatial cursor at the center of the screen
             if (!realityEditor.device.environment.isDesktop() && !pointerSnapMode) {
-                screenX = window.innerWidth / 2;
-                screenY = window.innerHeight / 2;
+                screenX = viewportCenter.x;
+                screenY = viewportCenter.y;
             }
             worldIntersectPoint = await getRaycastCoordinates(screenX, screenY, true, true);
             updateScaleFactor();
@@ -1044,8 +1048,9 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
     }
 
     async function getOrientedCursorIfItWereAtScreenCenter() {
+        let viewportCenter = realityEditor.device.layout.getViewportCenter();
         // move cursor to center, then get the matrix, then move the cursor back to where it was
-        worldIntersectPoint = await getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+        worldIntersectPoint = await getRaycastCoordinates(viewportCenter.x, viewportCenter.y);
         if (!realityEditor.device.environment.isDesktop() && worldIntersectPoint.distance > 10000) {
             worldIntersectPoint.distance = 1000;
 

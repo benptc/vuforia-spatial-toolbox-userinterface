@@ -720,8 +720,12 @@ realityEditor.gui.ar.utilities.getDivWithTargetTransformation = function(objectK
     }
 
     // the computation is only correct if it has the same width/height as the vehicle's transformed element
-    matrixComputationDiv.style.width = window.innerWidth + 'px';
-    matrixComputationDiv.style.height = window.innerHeight + 'px';
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+    matrixComputationDiv.style.width = viewportBbox.width + 'px';
+    matrixComputationDiv.style.height = viewportBbox.height + 'px';
+    // TODO: does this help?
+    matrixComputationDiv.style.left = viewportBbox.left + 'px';
+    matrixComputationDiv.style.top = viewportBbox.top + 'px';
 
     let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(objectKey);
     matrixComputationDiv.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
@@ -741,10 +745,10 @@ realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY = function(objectKey,
     // set dummy div transform to iframe without x,y,scale
     let matrixComputationDiv = this.getDivWithTargetTransformation(objectKey);
     let newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
-
+    let viewportCenter = realityEditor.device.layout.getViewportCenter();
     return {
-        x: newPosition.x - window.innerWidth / 2,
-        y: newPosition.y - window.innerHeight / 2
+        x: newPosition.x - viewportCenter.x,
+        y: newPosition.y - viewportCenter.y
     }
 };
 

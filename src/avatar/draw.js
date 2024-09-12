@@ -230,6 +230,9 @@ createNameSpace("realityEditor.avatar.draw");
     }
 
     function drawLaserBeam(objectKey, endWorldPosition, color, lightColor, screenX, screenY) {
+        if (realityEditor.device.environment.variables.dontRenderMyBeams &&
+            objectKey === realityEditor.avatar.getMyAvatarId()) return;
+        
         const THREE = realityEditor.gui.threejsScene.THREE;
         // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
         realityEditor.gui.spatialArrow.addLaserBeamIndicator(objectKey, endWorldPosition, color, lightColor);
@@ -435,6 +438,8 @@ createNameSpace("realityEditor.avatar.draw");
 
     // Shows an "Establishing Connection..." --> "Connected!" label in the top left
     function renderConnectionFeedback(isConnected, didFail = false) {
+        if (realityEditor.device.environment.variables.dontRenderAvatarStatusUI) return;
+
         if (!statusUI) {
             statusUI = document.createElement('div');
             statusUI.id = 'avatarStatus';

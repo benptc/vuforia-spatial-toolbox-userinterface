@@ -68,6 +68,11 @@ createNameSpace("realityEditor.envelopeManager");
                 return frameTypesToHighlight.indexOf(frameName) > -1;
             });
         });
+
+        realityEditor.device.layout.onWindowResized(({left, top}) => {
+            updateExitButtonPosition(left, top);
+            updateMinimizeButtonPosition(left, top);
+        });
     }
 
     /**
@@ -355,12 +360,50 @@ createNameSpace("realityEditor.envelopeManager");
         });
     }
 
+    function updateExitButtonPosition(viewportLeft, viewportTop) {
+        let breathingRoom = 5;
+        let exitButton = document.getElementById('exitEnvelopeButton');
+        if (exitButton) {
+            if (!viewportLeft) {
+                exitButton.style.left = 30 + 'px';
+            } else {
+                exitButton.style.left = (viewportLeft + breathingRoom) + 'px';
+            }
+            if (!viewportTop) {
+                exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+            } else {
+                exitButton.style.top = (viewportTop + breathingRoom) + 'px';
+            }
+        }
+    }
+
+    function updateMinimizeButtonPosition(viewportLeft, viewportTop) {
+        let breathingRoom = 5;
+        let minimizeButton = document.getElementById('minimizeEnvelopeButton');
+        if (minimizeButton) {
+            if (!viewportLeft) {
+                minimizeButton.style.left = 90 + 'px';
+            } else {
+                minimizeButton.style.left = (60 + viewportLeft + breathingRoom) + 'px';
+            }
+            if (!viewportTop) {
+                minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+            } else {
+                minimizeButton.style.top = (viewportTop + breathingRoom) + 'px';
+            }
+        }
+    }
+
     function createExitButton() {
         let exitButton = document.createElement('img');
         exitButton.classList.add('envelopeMenuButton');
         exitButton.src = 'svg/envelope-x-button.svg';
         exitButton.id = 'exitEnvelopeButton';
-        exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        // exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        updateExitButtonPosition(viewportBbox.left, viewportBbox.top);
+
         document.body.appendChild(exitButton);
 
         exitButton.addEventListener('pointerup', function() {
@@ -378,7 +421,11 @@ createNameSpace("realityEditor.envelopeManager");
         minimizeButton.classList.add('envelopeMenuButton');
         minimizeButton.src = 'svg/envelope-collapse-button.svg';
         minimizeButton.id = 'minimizeEnvelopeButton';
-        minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        // minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        updateMinimizeButtonPosition(viewportBbox.left, viewportBbox.top);
+
         document.body.appendChild(minimizeButton);
 
         minimizeButton.addEventListener('pointerup', function() {

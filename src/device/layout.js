@@ -80,6 +80,13 @@ createNameSpace('realityEditor.device.layout');
         onWindowResized: []
     }
 
+    let viewportMargins = {
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0
+    };
+
     function initService() {
         /**
          * Listen for messages that set up the subscription for spatialInterface.onWindowResized(({width, height})=>{}) tool API
@@ -97,74 +104,81 @@ createNameSpace('realityEditor.device.layout');
             }
         });
         resizeObserver.observe(document.body);
+    }
 
-        /**
-         * This is the main window resize event listener for the project.
-         * Other modules should use realityEditor.device.layout.onWindowResized(({width, height})=>{})
-         * rather than adding another window.onResize listener, so that code triggers in the right order
-         */
-        function windowResizeHandler() {
-            // noinspection JSSuspiciousNameCombination
-            globalStates.height = window.innerWidth;
-            // noinspection JSSuspiciousNameCombination
-            globalStates.width = window.innerHeight;
+    /**
+     * This is the main window resize event listener for the project.
+     * Other modules should use realityEditor.device.layout.onWindowResized(({width, height})=>{})
+     * rather than adding another window.onResize listener, so that code triggers in the right order
+     */
+    function windowResizeHandler() {
+        // noinspection JSSuspiciousNameCombination
+        globalStates.height = window.innerWidth;
+        // noinspection JSSuspiciousNameCombination
+        globalStates.width = window.innerHeight;
 
-            // reformat pocket tile size/arrangement
-            realityEditor.gui.pocket.onWindowResized();
+        // reformat pocket tile size/arrangement
+        realityEditor.gui.pocket.onWindowResized();
+        
+        let viewportWidth = window.innerWidth - viewportMargins.left - viewportMargins.right;
+        let viewportHeight = window.innerHeight - viewportMargins.top - viewportMargins.bottom;
 
-            // Resize the canvas used for drawing node links
-            let nodeConnectionCanvas = document.querySelector('.canvas-node-connections');
-            if (nodeConnectionCanvas) {
-                nodeConnectionCanvas.width = window.innerWidth;
-                nodeConnectionCanvas.height = window.innerHeight;
-                nodeConnectionCanvas.style.width = nodeConnectionCanvas.width + 'px';
-                nodeConnectionCanvas.style.height = nodeConnectionCanvas.height + 'px';
-            }
-
-            // adjust the size of each tool's container div to match the viewport...
-            // ...this is the magic that makes the CSS rendering put everything in the right coordinate system
-            // additionally, adjust fullscreen tools to maintain fullscreen size
-            realityEditor.forEachFrameInAllObjects((objectKey, frameKey) => {
-                let container = globalDOMCache['object' + frameKey];
-                let iframe = globalDOMCache['iframe' + frameKey];
-                let cover = globalDOMCache[frameKey];
-                // this is essential for rendering
-                if (container) {
-                    container.style.width = `${window.innerWidth}px`;
-                    container.style.height = `${window.innerHeight}px`;
-                }
-                // this adjusts the fullscreen iframes to continue to be fullscreen
-                if (iframe && iframe.classList.contains('webGlFrame')) {
-                    iframe.style.width = `${window.innerWidth}px`;
-                    iframe.style.height = `${window.innerHeight}px`;
-                    if (cover) {
-                        cover.style.width = `${window.innerWidth}px`;
-                        cover.style.height = `${window.innerHeight}px`;
-                    }
-                }
-            });
-
-            // trigger other modules that have subscribed using realityEditor.device.layout.onWindowResized(...)
-            callbacks.onWindowResized.forEach(callback => {
-                callback({
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                });
-            });
-
-            // post a onWindowResized message into each tool that has subscribed to spatialInterface.onWindowResized(...)
-            Object.keys(toolSubscriptions).forEach(frameKey => {
-                let iframe = document.getElementById('iframe' + frameKey);
-                if (!iframe) return;
-                let eventData = {
-                    onWindowResized: {
-                        width: window.innerWidth,
-                        height: window.innerHeight
-                    }
-                };
-                iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
-            });
+        // Resize the canvas used for drawing node links
+        let nodeConnectionCanvas = document.querySelector('.canvas-node-connections');
+        if (nodeConnectionCanvas) {
+            nodeConnectionCanvas.width = viewportWidth;
+            nodeConnectionCanvas.height = viewportHeight;
+            nodeConnectionCanvas.style.width = nodeConnectionCanvas.width + 'px';
+            nodeConnectionCanvas.style.height = nodeConnectionCanvas.height + 'px';
         }
+
+        // adjust the size of each tool's container div to match the viewport...
+        // ...this is the magic that makes the CSS rendering put everything in the right coordinate system
+        // additionally, adjust fullscreen tools to maintain fullscreen size
+        realityEditor.forEachFrameInAllObjects((objectKey, frameKey) => {
+            let container = globalDOMCache['object' + frameKey];
+            let iframe = globalDOMCache['iframe' + frameKey];
+            let cover = globalDOMCache[frameKey];
+            // this is essential for rendering
+            if (container) {
+                container.style.width = `${viewportWidth}px`;
+                container.style.height = `${viewportHeight}px`;
+                container.style.left = `${viewportMargins.left}px`;
+                container.style.top = `${viewportMargins.top}px`;
+            }
+            // this adjusts the fullscreen iframes to continue to be fullscreen
+            if (iframe && iframe.classList.contains('webGlFrame')) {
+                iframe.style.width = `${viewportWidth}px`;
+                iframe.style.height = `${viewportHeight}px`;
+                if (cover) {
+                    cover.style.width = `${viewportWidth}px`;
+                    cover.style.height = `${viewportHeight}px`;
+                }
+            }
+        });
+
+        // trigger other modules that have subscribed using realityEditor.device.layout.onWindowResized(...)
+        callbacks.onWindowResized.forEach(callback => {
+            callback({
+                width: (window.innerWidth - viewportMargins.left - viewportMargins.right),
+                height: (window.innerHeight - viewportMargins.top - viewportMargins.bottom),
+                top: viewportMargins.top,
+                left: viewportMargins.left
+            });
+        });
+
+        // post a onWindowResized message into each tool that has subscribed to spatialInterface.onWindowResized(...)
+        Object.keys(toolSubscriptions).forEach(frameKey => {
+            let iframe = document.getElementById('iframe' + frameKey);
+            if (!iframe) return;
+            let eventData = {
+                onWindowResized: {
+                    width: viewportWidth,
+                    height: viewportHeight
+                }
+            };
+            iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
+        });
     }
 
     /**
@@ -322,6 +336,40 @@ createNameSpace('realityEditor.device.layout');
         adjustRightEdgeIfNeeded();
     }
 
+    function setViewportMargins(margins = { left: 0, right: 0, top: 0, bottom: 0}) {
+        if (typeof margins.left === 'number') {
+            viewportMargins.left = margins.left;
+        }
+        if (typeof margins.right === 'number') {
+            viewportMargins.right = margins.right;
+        }
+        if (typeof margins.top === 'number') {
+            viewportMargins.top = margins.top;
+        }
+        if (typeof margins.bottom === 'number') {
+            viewportMargins.bottom = margins.bottom;
+        }
+
+        windowResizeHandler();
+    }
+
+    function getViewportBoundingBox() {
+        return {
+            left: viewportMargins.left,
+            top: viewportMargins.top,
+            width: window.innerWidth - viewportMargins.left - viewportMargins.right,
+            height: window.innerHeight - viewportMargins.top - viewportMargins.bottom,
+        };
+    }
+    
+    function getViewportCenter() {
+        let bbox = getViewportBoundingBox();
+        return {
+            x: bbox.left + bbox.width / 2,
+            y: bbox.top + bbox.height / 2,
+        }
+    }
+
     exports.initService = initService;
     exports.adjustForScreenSize = adjustForScreenSize;
     exports.getTrashThresholdX = getTrashThresholdX;
@@ -330,5 +378,8 @@ createNameSpace('realityEditor.device.layout');
     exports.setTrashZoneRect = setTrashZoneRect;
     exports.getCustomTrashZone = () => { return customTrashZone; }
     exports.onWindowResized = onWindowResized;
+    exports.setViewportMargins = setViewportMargins;
+    exports.getViewportBoundingBox = getViewportBoundingBox;
+    exports.getViewportCenter = getViewportCenter;
 
 })(realityEditor.device.layout);

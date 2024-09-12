@@ -117,9 +117,11 @@ class Camera {
             pos.negate();
         }
 
+        let viewportCenter = realityEditor.device.layout.getViewportCenter();
+
         return {
-            x: ( pos.x + 1 ) * window.innerWidth / 2,
-            y: ( -pos.y + 1) * window.innerHeight / 2
+            x: ( pos.x + 1 ) * viewportCenter.x,
+            y: ( -pos.y + 1) * viewportCenter.y
         };
     }
 
