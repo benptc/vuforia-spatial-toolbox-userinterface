@@ -47,6 +47,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import getToolOrchestrator from '../../toolOrchestration/ToolOrchestrator.js';
+
 createNameSpace("realityEditor.gui.ar.draw");
 
 /**
@@ -1953,6 +1955,12 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             thisUrl = realityEditor.network.availableFrames.getFrameSrc(objectKey, activeVehicle.src);
         }
         
+        if (getToolOrchestrator().hasSpatialTool(objectKey, frameKey)) {
+            console.log('found tool initialized by new part of the system');
+            getToolOrchestrator().initializeDomElementsForTool(objectKey, frameKey);
+            return;
+        }
+        
         // Create DOM elements for everything associated with this frame/node
         var domElements = this.createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
         var addContainer = domElements.addContainer;
@@ -2013,12 +2021,13 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
  * @param {Frame|Node} activeVehicle
  * @return {{addContainer: HTMLDivElement, addIframe: HTMLIFrameElement, addOverlay: HTMLDivElement, addSVG: HTMLElement}}
  */
-realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
+realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle, frameRole) {
 
     var activeKey = nodeKey ? nodeKey : frameKey;
+    let idSuffix = (frameRole ? `_${frameRole}` : '');
 
     var addContainer = document.createElement('div');
-    addContainer.id = "object" + activeKey;
+    addContainer.id = "object" + activeKey + idSuffix;
     addContainer.classList.add("main");
     addContainer.style.width = globalStates.height + "px";
     addContainer.style.height = globalStates.width + "px";
@@ -2031,7 +2040,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addContainer.classList.add('ignorePointerEvents'); // don't let invisible background from container intercept touches
 
     var addIframe = document.createElement('iframe');
-    addIframe.id = "iframe" + activeKey;
+    addIframe.id = "iframe" + activeKey + idSuffix;
     addIframe.classList.add("main");
     addIframe.frameBorder = 0;
     addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX) + "px";
@@ -2043,7 +2052,13 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.setAttribute("data-frame-key", frameKey);
     addIframe.setAttribute("data-object-key", objectKey);
     addIframe.setAttribute("data-node-key", nodeKey);
-    addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    // TODO: adjust based on role
+    
+    if (frameRole !== 'sidebar') {
+        addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    } else {
+        addIframe.setAttribute("onload", 'realityEditor.network.onSidebarElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    }
     // TODO: remove this 'sandbox' attribute if you try to embed iframes within the tool's iframe and you run into browser restrictions
     let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
     addIframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
@@ -2052,7 +2067,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     // TODO: try to load elements with an XHR request so they don't block the rendering loop
 
     var addOverlay = document.createElement('div');
-    addOverlay.id = activeKey;
+    addOverlay.id = activeKey + idSuffix;
     addOverlay.classList.add((globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram");
     addOverlay.frameBorder = 0;
     addOverlay.style.width = activeVehicle.frameSizeX + "px";
@@ -2067,7 +2082,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
 
     var addSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    addSVG.id = "svg" + activeKey;
+    addSVG.id = "svg" + activeKey + idSuffix;
     addSVG.classList.add("mainCanvas");
     addSVG.style.width = "100%";
     addSVG.style.height = "100%";

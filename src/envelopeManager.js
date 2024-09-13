@@ -188,6 +188,10 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
         const envelope = knownEnvelopes[frameId];
+        if (!envelope) {
+            console.error(`trying to open envelope ${frameId}, which doesn't exist.`);
+            return;
+        }
         if (envelope.isOpen) return;
 
         envelope.isOpen = true;

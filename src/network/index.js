@@ -3285,6 +3285,41 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     this.cout("on_load");
 };
 
+realityEditor.network.onSidebarElementLoad = function (objectKey, frameKey, nodeKey) {
+    if (nodeKey === "null") nodeKey = null;
+    let object = realityEditor.getObject(objectKey);
+    let frame = realityEditor.getFrame(objectKey, frameKey);
+    let nodes = frame ? frame.nodes : {};
+    let simpleNodes = this.utilities.getNodesJsonForIframes(nodes);
+    let newStyle = {
+        object: objectKey,
+        frame: frameKey,
+        objectData: {},
+        node: nodeKey,
+        nodes: simpleNodes,
+        port: realityEditor.network.getPort(object),
+        interface: globalStates.interface,
+        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey), // TODO: make this independent from viewport
+        parentLocation: window.location.href
+    };
+    const idSuffix = '_sidebar';
+    globalDOMCache["iframe" + frameKey + idSuffix].setAttribute('loaded', true);
+    globalDOMCache["iframe" + frameKey + idSuffix].contentWindow.postMessage(JSON.stringify(newStyle), '*');
+
+    if (globalDOMCache['iframe' + frameKey + idSuffix].dataset.isReloading) {
+        delete globalDOMCache['iframe' + frameKey + idSuffix].dataset.isReloading;
+        // TODO: trigger callbacks for sidebar if needed
+        // realityEditor.network.callbackHandler.triggerCallbacks('elementReloaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
+    } else {
+        // realityEditor.network.callbackHandler.triggerCallbacks('elementLoaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
+    }
+
+    // this is used so we can render a placeholder until it loads
+    globalDOMCache['iframe' + frameKey + idSuffix].dataset.doneLoading = true;
+    
+    console.log('onSidebarElementLoad done');
+}
+
 /**
  * Makes a POST request to add a lock to the specified node. Whether or not you are actually allowed to add the
  *   lock is determined within the server, based on the state of the node and the password and lock type you provide
