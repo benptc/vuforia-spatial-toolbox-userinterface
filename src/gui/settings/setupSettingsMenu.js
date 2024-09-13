@@ -84,7 +84,7 @@ createNameSpace('realityEditor.gui.settings.setupSettingsMenu');
         }).moveToDevelopMenu();
 
         realityEditor.gui.settings.addToggle('Demo Aspect Ratio', 'set screen ratio to 16:9', 'demoAspectRatio',  '../../../svg/cameraZoom.svg', false, function() {
-            const currentRatio = globalStates.height / globalStates.width;
+            const currentRatio = window.innerWidth / window.innerHeight;
             if (Math.abs(currentRatio - (16/9)) < 0.001) {
                 realityEditor.app.setAspectRatio(0); // Resets to default
             } else {

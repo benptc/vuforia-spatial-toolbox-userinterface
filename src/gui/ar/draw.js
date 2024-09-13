@@ -1333,8 +1333,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 activeVehicle.screenY = clientRect.top + clientRect.height/2;
                 activeVehicle.screenZ = 500; // this gives it a good link line width
             } else {
-                activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
-                activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
+                let viewportCenter = realityEditor.device.layout.getViewportCenter();
+                activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + viewportCenter.x;
+                activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + viewportCenter.y;
             }
             
             if (thisIsBeingEdited) {
@@ -2026,11 +2027,14 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     var activeKey = nodeKey ? nodeKey : frameKey;
     let idSuffix = (frameRole ? `_${frameRole}` : '');
 
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+    // let viewportCenter = realityEditor.device.layout.getViewportCenter();
+
     var addContainer = document.createElement('div');
     addContainer.id = "object" + activeKey + idSuffix;
     addContainer.classList.add("main");
-    addContainer.style.width = globalStates.height + "px";
-    addContainer.style.height = globalStates.width + "px";
+    addContainer.style.width = viewportBbox.width + "px";
+    addContainer.style.height = viewportBbox.height + "px";
     if (nodeKey) {
         addContainer.classList.add('hiddenNodeContainer');
     } else {
@@ -2045,8 +2049,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.frameBorder = 0;
     addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX) + "px";
     addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY) + "px";
-    addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
-    addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
+    addIframe.style.left = ((viewportBbox.width - activeVehicle.frameSizeX) / 2) + "px"; // TODO: do we need to adjust based on viewport center (left and top too)?
+    addIframe.style.top = ((viewportBbox.height - activeVehicle.frameSizeY) / 2) + "px";
     addIframe.classList.add('hiddenFrame');
     addIframe.src = iframeSrc;
     addIframe.setAttribute("data-frame-key", frameKey);
@@ -2072,8 +2076,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.frameBorder = 0;
     addOverlay.style.width = activeVehicle.frameSizeX + "px";
     addOverlay.style.height = activeVehicle.frameSizeY + "px";
-    addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
-    addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
+    addOverlay.style.left = ((viewportBbox.width - activeVehicle.frameSizeX) / 2) + "px";
+    addOverlay.style.top = ((viewportBbox.height - activeVehicle.frameSizeY) / 2) + "px";
     addOverlay.style.visibility = "hidden";
     addOverlay.style.zIndex = "3";
     if (activeVehicle.developer) {

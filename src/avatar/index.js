@@ -125,10 +125,14 @@ createNameSpace("realityEditor.avatar");
             isDesktop = realityEditor.device.environment.isDesktop();
             addLinkCanvas();
             resizeLinkCanvas();
-            window.addEventListener('resize', () => {
+            realityEditor.device.layout.onWindowResized(() => {
                 realityEditor.avatar.setLinkCanvasNeedsClear(true);
                 resizeLinkCanvas();
             });
+            // window.addEventListener('resize', () => {
+            //     realityEditor.avatar.setLinkCanvasNeedsClear(true);
+            //     resizeLinkCanvas();
+            // });
         }
 
         network.onAvatarDiscovered((object, objectKey) => {
@@ -218,7 +222,7 @@ createNameSpace("realityEditor.avatar");
         });
 
         realityEditor.network.addPostMessageHandler('getUserDetails', (_, fullMessageData) => {
-            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+            realityEditor.network.postMessageIntoFrame(fullMessageData.iframeId, {
                 userDetails: {
                     name: myUsername,
                     providerId: myProviderId,
@@ -241,7 +245,7 @@ createNameSpace("realityEditor.avatar");
         linkCanvasContainer.style.top = '0';
         linkCanvasContainer.style.left = '0';
         linkCanvasContainer.style.pointerEvents = 'none';
-        linkCanvasContainer.style.zIndex = '3001';
+        linkCanvasContainer.style.zIndex = '990';
         linkCanvasContainer.style.transform = 'translateZ(3001px)';
         document.body.appendChild(linkCanvasContainer);
 
@@ -250,7 +254,7 @@ createNameSpace("realityEditor.avatar");
         linkCanvas.style.position = 'absolute';
         linkCanvas.style.top = '0';
         linkCanvas.style.left = '0';
-        linkCanvas.style.zIndex = '3001';
+        linkCanvas.style.zIndex = '990';
         linkCanvas.style.transform = 'translateZ(3001px)';
         linkCanvasContainer.appendChild(linkCanvas);
 
@@ -259,8 +263,13 @@ createNameSpace("realityEditor.avatar");
 
     function resizeLinkCanvas() {
         if (linkCanvas !== undefined) {
-            linkCanvas.width = window.innerWidth;
-            linkCanvas.height = window.innerHeight;
+            let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+            linkCanvas.width = viewportBbox.width;
+            linkCanvas.height = viewportBbox.height;
+            linkCanvas.style.left = viewportBbox.left + 'px';
+            linkCanvas.style.top = viewportBbox.top + 'px';
+            linkCanvas.style.width = viewportBbox.width + 'px';
+            linkCanvas.style.height = viewportBbox.height + 'px';
         }
     }
 

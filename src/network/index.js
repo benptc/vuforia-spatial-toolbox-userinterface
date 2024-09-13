@@ -1270,6 +1270,21 @@ realityEditor.network.reloadFrame = function(objectKey, frameKey, fullActionMess
     }, { bypassCache: true });
 }
 
+realityEditor.network.getIframeSourceOfPostMessageEvent = function (event) {
+    // Get all iframes in the document
+    const iframes = document.querySelectorAll('iframe');
+
+    // Find the iframe that matches the event.source
+    for (const iframe of iframes) {
+        if (iframe.contentWindow === event.source) {
+            // Now you know which iframe sent the message
+            return iframe;
+        }
+    }
+    
+    return null;
+};
+
 /**
  * Gets triggered when an iframe makes a POST request to communicate with the Reality Editor via the object.js API
  * Also gets triggered when the settings.html (or other menus) makes a POST request
@@ -1289,6 +1304,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
     } else {
         msgContent = JSON.parse(e);
     }
+
+    let iframeSource = this.getIframeSourceOfPostMessageEvent(e);
+    // console.log(iframeSource);
+    msgContent.iframeId = iframeSource.id.replace(/^iframe/, '');  // Only removes 'iframe' if it's at the start of the string
 
     // iterates over all registered postMessageHandlers to trigger events in various modules
     this.postMessageHandlers.forEach(function(messageHandler) {
@@ -1365,9 +1384,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
         var overlay = document.getElementById(activeKey);
         var iFrame = document.getElementById('iframe' + activeKey);
         var svg = document.getElementById('svg' + activeKey);
+        
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
 
-        var top = ((globalStates.width - msgContent.height) / 2);
-        var left = ((globalStates.height - msgContent.width) / 2);
+        var top = ((viewportBbox.height - msgContent.height) / 2);
+        var left = ((viewportBbox.width - msgContent.width) / 2);
         overlay.style.width = msgContent.width;
         overlay.style.height = msgContent.height;
         overlay.style.top = top;
@@ -2034,11 +2055,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
         frame.ignoreAllTouches = msgContent.ignoreAllTouches;
     }
 
+    // TODO: rename this API call because it isn't screen anymore, it's viewport; or provide both in the results
     if (typeof msgContent.getScreenDimensions !== "undefined") {
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify({
             screenDimensions: {
-                width: globalStates.height,
-                height: globalStates.width
+                width: viewportBbox.width,
+                height: viewportBbox.height
             }
         }), '*');
     }
@@ -3445,6 +3468,7 @@ realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicD
  * @param {object} message - JSON data to send into the frame
  */
 realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
+    // TODO: post into sidebar or viewport depending...
     var frame = document.getElementById('iframe' + frameKey);
     if (frame) {
         frame.contentWindow.postMessage(JSON.stringify(message), "*");

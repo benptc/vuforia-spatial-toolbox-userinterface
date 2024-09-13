@@ -95,11 +95,13 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         if (!pocketDomElement) return; // wait until DOM element for this pocket item exists before attempting to move it
 
         var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+        
+        let viewportCenter = realityEditor.device.layout.getViewportCenter();
 
         if (!closestObjectKey) {
             
-            thisItem.x = evt.clientX - (globalStates.height / 2);
-            thisItem.y = evt.clientY - (globalStates.width / 2);
+            thisItem.x = evt.clientX - viewportCenter.x;
+            thisItem.y = evt.clientY - viewportCenter.y;
             
         } else {
             
@@ -951,12 +953,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      */
     function addTutorialFrame(objectKey) {
         try {
+            let viewportCenter = realityEditor.device.layout.getViewportCenter();
             createFrame('uiTutorial', {
                 startPositionOffset: JSON.stringify({x: 0, y: 0}),
                 width: '568',
                 height: '420',
-                pageX: window.innerWidth / 2,
-                pageY: window.innerHeight / 2,
+                pageX: viewportCenter.x,
+                pageY: viewportCenter.y,
                 objectKey: objectKey
             });
         } catch (e) {

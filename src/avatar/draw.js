@@ -255,7 +255,16 @@ createNameSpace("realityEditor.avatar.draw");
                 avatarIconElementRect = avatarIconContainer.getBoundingClientRect();
             }
         }
-        let linkStartPos = [avatarIconElementRect.x + avatarIconElementRect.width / 2, avatarIconElementRect.y + avatarIconElementRect.height / 2];
+
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+
+        let linkStartPos = [
+            avatarIconElementRect.x + avatarIconElementRect.width / 2 - viewportBbox.left,
+            avatarIconElementRect.y + avatarIconElementRect.height / 2 - viewportBbox.top
+        ];
+
+        // let clientX = screenX - viewportBbox.left;
+        // let clientY = screenY - viewportBbox.top;
         
         // for laser beams coming from other devices, draw to the worldPosition
         // for laser beams from this device, draw to the (screenX, screenY) where the user touches
@@ -267,11 +276,17 @@ createNameSpace("realityEditor.avatar.draw");
             let linkDistance = camWorldPos.sub(endWorldPosition).length();
             lineEndThicknessRatio = quadraticRemap(linkDistance, 0, 20000, 0.1, 1);
             endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
+            endScreenXY.x -= viewportBbox.left;
+            endScreenXY.y -= viewportBbox.top;
+
         } else if (screenX && screenY) {
             endScreenXY = {
                 x: screenX,
                 y: screenY
             };
+            endScreenXY.x -= viewportBbox.left;
+            endScreenXY.y -= viewportBbox.top;
+
             let linkDistance = Math.sqrt(Math.pow((screenX - linkStartPos[0]), 2) + Math.pow((screenY - linkStartPos[1]), 2));
             lineEndThicknessRatio = quadraticRemap(linkDistance, 0, 10000, 0.1, 1);
         } else {

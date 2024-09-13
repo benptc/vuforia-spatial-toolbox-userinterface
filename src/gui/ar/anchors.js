@@ -240,18 +240,21 @@ createNameSpace("realityEditor.gui.ar.anchors");
             anchorContainer.classList.add('hiddenAnchor');
         }
 
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        let viewportCenter = realityEditor.device.layout.getViewportCenter();
+
         // IMPORTANT NOTE: the container size MUST be the size of the screen for the 3d math to work
         // This is the same size as the containers that frames get added to.
         // If size differs, rendering will be inconsistent between frames and anchors.
-        anchorContainer.style.width = globalStates.height + 'px';
-        anchorContainer.style.height = globalStates.width + 'px';
+        anchorContainer.style.width = viewportBbox.width + 'px';
+        anchorContainer.style.height = viewportBbox.height + 'px';
 
         // the contents are a different size than the screen, so we add another div and center it
         let anchorContents = document.createElement('div');
         anchorContents.id = 'anchorContents' + objectKey;
         anchorContents.classList.add('anchorContents', 'usePointerEvents');
-        anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
-        anchorContents.style.top = (globalStates.width/2 - anchorContentSize/2) + 'px';
+        anchorContents.style.left = (viewportCenter.x - anchorContentSize/2) + 'px';
+        anchorContents.style.top = (viewportCenter.y - anchorContentSize/2) + 'px';
         
         anchorContainer.appendChild(anchorContents);
         document.getElementById('GUI').appendChild(anchorContainer);
@@ -346,6 +349,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
     function updateAnchorGraphics(objectKey, forceCreation) {
         let container = globalDOMCache['anchor' + objectKey];
         let element = globalDOMCache['anchorContents' + objectKey];
+        let viewportCenter = realityEditor.device.layout.getViewportCenter();
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
         if (fullscreenAnchor === objectKey && (!element.classList.contains('anchorContentsFullscreen') || forceCreation)) {
 
             // this will make sure it isn't inside an invisible container
@@ -392,9 +397,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
             let centerContainer = document.createElement('div');
             centerContainer.classList.add('anchorCenter');
-            let size = (0.6 * globalStates.width);
-            centerContainer.style.left = (globalStates.height/2 - size/2) + 'px';
-            centerContainer.style.top = (globalStates.width/2 - size/2) + 'px';
+            let size = (0.6 * viewportBbox.height);
+            centerContainer.style.left = (viewportCenter.x - size/2) + 'px';
+            centerContainer.style.top = (viewportCenter.y - size/2) + 'px';
 
             let centerSvg = document.createElement('img');
             centerSvg.src = '../../../svg/anchorCenter.svg';
@@ -423,8 +428,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
             // resize it to be a small centered icon in its container
             element.classList.remove('anchorContentsFullscreen');
-            element.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
-            element.style.top = (globalStates.width/2 - anchorContentSize/2) + 'px';
+            element.style.left = (viewportCenter.x - anchorContentSize/2) + 'px';
+            element.style.top = (viewportCenter.y - anchorContentSize/2) + 'px';
 
             // rebuild the HTML with an SVG icon
             element.innerHTML = '';

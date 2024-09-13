@@ -17,10 +17,12 @@ realityEditor.gui.ar.moveabilityOverlay.createSvg = function(svg){
     var x = parseInt(svg.style.width, 10);
     var y = parseInt(svg.style.height, 10);
 
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+
     //  if the object is fullscreen, handle differently so we don't convert 100% to 100px)
     if (svg.style.width[svg.style.width.length-1] === "%") {
-        x = (x/100) * globalStates.height;
-        y = (y/100) * globalStates.width;
+        x = (x/100) * viewportBbox.width;
+        y = (y/100) * viewportBbox.height;
         // return;
     }
     

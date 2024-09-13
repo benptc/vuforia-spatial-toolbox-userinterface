@@ -1,3 +1,5 @@
+window.UI_MODE = 'CREO_VIEW';
+
 /**
  *
  *
@@ -92,10 +94,11 @@ realityEditor.device.onload = async function () {
         realityEditor.gui.modal.showBannerNotification(message, 'offlineUIcontainer', 'offlineUItext', 5000);
     });
 
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
-    globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
-    globalCanvas.canvas.height = globalStates.width;
+    globalCanvas.canvas.width = viewportBbox.width;
+    globalCanvas.canvas.height = viewportBbox.height;
     globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
     realityEditor.device.environment.initService();
@@ -180,9 +183,9 @@ realityEditor.device.onload = async function () {
     
     // center the menu vertically if the screen is taller than 320 px
     var MENU_HEIGHT = 320;
-    var menuHeightDifference = globalStates.width - MENU_HEIGHT;
+    var menuHeightDifference = window.innerHeight - MENU_HEIGHT;
     document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
-    CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
+    CRAFTING_GRID_HEIGHT = window.innerHeight - menuHeightDifference;
 	
 	// set up the pocket and memory bars
     if (!TEMP_DISABLE_MEMORIES) {

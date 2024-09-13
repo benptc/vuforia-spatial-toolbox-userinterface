@@ -18,7 +18,7 @@ import { remap } from "../utilities/MathUtils.js";
         initCanvas();
         update();
 
-        window.addEventListener('resize', () => {
+        realityEditor.device.layout.onWindowResized(() => {
             // translate the canvas back to its original place and clear it
             translate(-translateX, -translateY);
             clear();
@@ -43,7 +43,7 @@ import { remap } from "../utilities/MathUtils.js";
         menuBarHeight = realityEditor.device.environment.variables.screenTopOffset;
         canvas.style.top = `${menuBarHeight}px`;
         canvas.style.left = '0';
-        canvas.style.zIndex = '3001';
+        canvas.style.zIndex = '990';
         canvasContainer.appendChild(canvas);
 
         ctx = canvas.getContext("2d");

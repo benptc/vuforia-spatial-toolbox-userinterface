@@ -28,7 +28,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     let target = null; // this is where the center of the screen raycasts against the groundplane
     let cachedGroundPlaneCollider = null;
 
-    let centerPoint = new WebKitPoint(globalStates.height/2, globalStates.width/2);
+    let viewportCenter = realityEditor.device.layout.getViewportCenter();
+    let centerPoint = new WebKitPoint(viewportCenter.x, viewportCenter.y);
 
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
@@ -63,6 +64,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         setTimeout(function() {
             realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
         }, 1000);
+
+        realityEditor.device.layout.onWindowResized(() => {
+            let viewportCenter = realityEditor.device.layout.getViewportCenter();
+            centerPoint = new WebKitPoint(viewportCenter.x, viewportCenter.y);
+        });
     }
 
     function startVisualization() {

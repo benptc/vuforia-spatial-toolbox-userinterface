@@ -75,11 +75,12 @@ createNameSpace("realityEditor.device.distanceScaling");
 
             globalCanvas.hasContent = true;
             var frame = realityEditor.device.getEditingVehicle();
-            // noinspection JSSuspiciousNameCombination
-            var screenWidth = globalStates.height;
-            // noinspection JSSuspiciousNameCombination
-            var screenHeight = globalStates.width;
-            var startPoint = [screenWidth/2, screenHeight/2];
+            
+            let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+            let viewportCenter = realityEditor.device.layout.getViewportCenter();
+            var screenWidth = viewportBbox.width;
+            var screenHeight = viewportBbox.height;
+            var startPoint = [viewportCenter.x, viewportCenter.y];
             var startWeight = 30;
             var colorCode = 4; // white
             var widthFactor = 0.25;
@@ -124,11 +125,12 @@ createNameSpace("realityEditor.device.distanceScaling");
             var finalMatrix = [];
             realityEditor.gui.ar.utilities.multiplyMatrix(rotation3d, realityEditor.gui.ar.draw.groundPlaneMatrix, rotatedGroundPlaneMatrix);
             realityEditor.gui.ar.utilities.multiplyMatrix(rotatedGroundPlaneMatrix, globalStates.projectionMatrix, finalMatrix);
-            
+
+            let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
             groundPlaneRotation = realityEditor.gui.ar.utilities.copyMatrix(finalMatrix);
             var perspectiveValue = groundPlaneRotation[15];
-            groundPlaneRotation[12] = perspectiveValue * globalStates.height/2;
-            groundPlaneRotation[13] = -1 * perspectiveValue * globalStates.width/2;
+            groundPlaneRotation[12] = perspectiveValue * viewportBbox.width/2;
+            groundPlaneRotation[13] = -1 * perspectiveValue * viewportBbox.height/2;
             groundPlaneRotation[14] = 0;
             // groundPlaneRotation[15] = 1;
             

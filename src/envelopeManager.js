@@ -709,9 +709,10 @@ createNameSpace("realityEditor.envelopeManager");
                 var envelopeData = realityElements.find(function(elt) { return elt.name === frameTypeNeeded; });
                 // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
 
-                var touchPosition = {
-                    x: 100 + Math.random() * (globalStates.height - 200),
-                    y: 100 + Math.random() * (globalStates.width - 200)
+                let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+                let touchPosition = {
+                    x: 100 + Math.random() * (viewportBbox.width - 200),
+                    y: 100 + Math.random() * (viewportBbox.height - 200)
                 };
 
                 if (envelopeData) {
@@ -855,6 +856,8 @@ createNameSpace("realityEditor.envelopeManager");
         if (!frame) return null;
         return frame.src;
     }
+    
+    const DEBUG_DISABLE_BLUR_FULL_2D = true;
 
     function showBlurredBackground(focusedFrameId) {
         // create a fullscreen div with webkit-backdrop-filter: blur(), if it isn't already shown
@@ -891,6 +894,24 @@ createNameSpace("realityEditor.envelopeManager");
         let webGlCanvas = document.getElementById('glcanvas');
         if (webGlCanvas) {
             webGlCanvas.classList.add('hiddenByFull2DBlurredBackground');
+        }
+
+        // undo the effects if we've disabled this feature
+        if (DEBUG_DISABLE_BLUR_FULL_2D) {
+            blur.style.display = 'none';
+            if (globalDOMCache[focusedFrameId]) {
+                globalDOMCache[focusedFrameId].classList.remove('deactivatedIframeOverlay');
+            }
+
+            // if (knownEnvelopes[focusedFrameId]) {
+            //     knownEnvelopes[focusedFrameId].isFull2D = false;
+            //     updateExitButton();
+            // }
+
+            // show all frames and icons that were hidden when the full2D frame opened, and the webgl canvas
+            Array.from(document.querySelectorAll('.hiddenByFull2DBlurredBackground')).forEach(element => {
+                element.classList.remove('hiddenByFull2DBlurredBackground');
+            });
         }
 
         callbacks.onFullscreenFull2DToggled.forEach(cb => cb({

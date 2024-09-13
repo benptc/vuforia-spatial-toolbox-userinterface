@@ -287,10 +287,13 @@ createNameSpace("realityEditor.gui.glRenderer");
     function initService() {
         // canvas = globalCanvas.canvas;
         canvas = document.querySelector('#glcanvas');
-        canvas.width = globalStates.height;
-        canvas.height = globalStates.width;
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        canvas.width = viewportBbox.width;
+        canvas.height = viewportBbox.height;
         canvas.style.width = canvas.width + 'px';
         canvas.style.height = canvas.height + 'px';
+        canvas.style.left = viewportBbox.left + 'px';
+        canvas.style.top = viewportBbox.top + 'px';
         gl = canvas.getContext('webgl2');
 
         realityEditor.device.layout.onWindowResized(({width, height, left, top}) => {

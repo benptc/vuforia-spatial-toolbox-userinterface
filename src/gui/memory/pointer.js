@@ -212,24 +212,26 @@ MemoryPointer.prototype.draw = function() {
     var scale = (this.connectedNode.screenLinearZ*this.connectedObject.averageScale) /10;
 
     var tol = 60 * scale;
+    
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
 
-    var connectedNodeIsOffscreen = (this.connectedNode.screenX < -tol) ||
-        (this.connectedNode.screenY < -tol) ||
-        (this.connectedNode.screenX > globalStates.height + tol) ||
-        (this.connectedNode.screenY > globalStates.width + tol);
+    var connectedNodeIsOffscreen = (this.connectedNode.screenX < viewportBbox.left - tol) ||
+        (this.connectedNode.screenY < viewportBbox.top - tol) ||
+        (this.connectedNode.screenX > (viewportBbox.left + viewportBbox.width) + tol) ||
+        (this.connectedNode.screenY > (viewportBbox.top + viewportBbox.height) + tol);
 
     if (!connectedNodeIsOffscreen) {
-        if (this.x < tol) {
-            this.x = tol;
+        if (this.x < viewportBbox.left - tol) {
+            this.x = viewportBbox.left - tol;
         }
-        if (this.y < tol) {
-            this.y = tol;
+        if (this.y < viewportBbox.top - tol) {
+            this.y = viewportBbox.top - tol;
         }
-        if (this.x > globalStates.height - tol) {
-            this.x = globalStates.height - tol;
+        if (this.x > (viewportBbox.left + viewportBbox.width) + tol) {
+            this.x = (viewportBbox.left + viewportBbox.width) + tol;
         }
-        if (this.y > globalStates.width - tol) {
-            this.y = globalStates.width - tol;
+        if (this.y > (viewportBbox.top + viewportBbox.height) + tol) {
+            this.y = (viewportBbox.top + viewportBbox.height) + tol;
         }
     }
 

@@ -417,9 +417,10 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
  * @return {{x: number, y: number}}
  */
 realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
-    var touchX = globalStates.height/2; // defaults to center of screen;
-    var touchY = globalStates.width/2;
-    
+    let viewportCenter = realityEditor.device.layout.getViewportCenter();
+    let touchX = viewportCenter.x; // defaults to center of screen;
+    let touchY = viewportCenter.y;
+
     try {
         var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
         touchX = translate3d[0];
@@ -427,7 +428,7 @@ realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
     } catch (e) {
         // no touches on screen yet, so defaulting to center
     }
-    
+
     return {
         x: touchX,
         y: touchY
@@ -473,19 +474,21 @@ realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast = function(finalMatri
 
     // var halfWidth = parseInt(frame.frameSizeX)/2;
     // var halfHeight = parseInt(frame.frameSizeY)/2;
-    
+
+    let viewportCenter = realityEditor.device.layout.getViewportCenter();
+
     // super optimized version of getProjectedCoordinates (including multiplyMatrix4 and perspectiveDivide) for the 0,0 coordinate
     screenCoordinates.center = {
-        x: (globalStates.height / 2) + (finalMatrix[12] / finalMatrix[15]),
-        y: (globalStates.width / 2) + (finalMatrix[13] / finalMatrix[15])
+        x: viewportCenter.x + (finalMatrix[12] / finalMatrix[15]),
+        y: viewportCenter.y + (finalMatrix[13] / finalMatrix[15])
     };
     
     if (typeof onlyCenter === 'undefined') {
         // perspective divide is more complicated for point not at 0,0 ... but still pretty optimized
         var perspectiveDivide = finalMatrix[3] * (-1 * vehicleHalfWidth) + finalMatrix[7] * (-1 * vehicleHalfHeight) + finalMatrix[15];
         screenCoordinates.upperLeft = {
-            x: (globalStates.height / 2) + ((finalMatrix[0] * (-1 * vehicleHalfWidth) + finalMatrix[4] * (-1 * vehicleHalfHeight) + finalMatrix[12]) / perspectiveDivide),
-            y: (globalStates.width / 2) + ((finalMatrix[1] * (-1 * vehicleHalfWidth) + finalMatrix[5] * (-1 * vehicleHalfHeight) + finalMatrix[13]) / perspectiveDivide)
+            x: viewportCenter.x + ((finalMatrix[0] * (-1 * vehicleHalfWidth) + finalMatrix[4] * (-1 * vehicleHalfHeight) + finalMatrix[12]) / perspectiveDivide),
+            y: viewportCenter.y + ((finalMatrix[1] * (-1 * vehicleHalfWidth) + finalMatrix[5] * (-1 * vehicleHalfHeight) + finalMatrix[13]) / perspectiveDivide)
         };
 
         // don't calculate lowerRight with expensive matrix multiplications, it can be deduced from center and upperLeft because it is the reflection of upperLeft across the center
@@ -605,8 +608,9 @@ realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKe
 realityEditor.gui.ar.positioning.getProjectedCoordinates = function(frameCoordinateVector, frameMatrix) {
     var utils = realityEditor.gui.ar.utilities;
     var projectedCoordinateVector = utils.perspectiveDivide(utils.multiplyMatrix4(frameCoordinateVector, frameMatrix));
-    projectedCoordinateVector[0] += (globalStates.height / 2);
-    projectedCoordinateVector[1] += (globalStates.width / 2);
+    let viewportCenter = realityEditor.device.layout.getViewportCenter();
+    projectedCoordinateVector[0] += viewportCenter.x;
+    projectedCoordinateVector[1] += viewportCenter.y;
     return {
         x: projectedCoordinateVector[0],
         y: projectedCoordinateVector[1]
@@ -695,20 +699,22 @@ realityEditor.gui.ar.positioning.canUnload = function(activeKey, finalMatrix, ve
     var top = frameScreenPosition.upperLeft.y;
     var bottom = frameScreenPosition.lowerRight.y;
 
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+
     // usually (in powerSave mode) remove if frame is slightly outside screen bounds
     let viewportBounds = {
-        left: 0,
-        right: globalStates.height,
-        top: 0,
-        bottom: globalStates.width
+        left: viewportBbox.left,
+        right: viewportBbox.left + viewportBbox.width,
+        top: viewportBbox.top,
+        bottom: viewportBbox.top + viewportBbox.height
     };
 
     // if not in powerSave mode, be more generous about keeping frames loaded
     // adds a buffer on each side of the viewport equal to the size of the screen
     if (!realityEditor.gui.settings.toggleStates.powerSaveMode) {
         let additionalBuffer = {
-            x: globalStates.height,
-            y: globalStates.width
+            x: viewportBbox.width,
+            y: viewportBbox.height
         };
         viewportBounds.left -= additionalBuffer.x;
         viewportBounds.right += additionalBuffer.x;

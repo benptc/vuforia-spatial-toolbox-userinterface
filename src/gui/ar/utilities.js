@@ -467,17 +467,13 @@ realityEditor.gui.ar.utilities.insidePoly = function(point, vertices) {
 realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey) {
     var thisNode = thisObject.nodes[nodeKey];
 
-    // This is correct, globalStates.height is actually the width (568), while globalStates.width is the height (320)
-    // noinspection JSSuspiciousNameCombination
-    var screenWidth = globalStates.height;
-    // noinspection JSSuspiciousNameCombination
-    var screenHeight = globalStates.width;
-    
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+
     var screenCorners = [
-        [0,0],
-        [screenWidth,0],
-        [screenWidth,screenHeight],
-        [0,screenHeight]
+        [viewportBbox.left,                         viewportBbox.top],
+        [viewportBbox.left + viewportBbox.width,    viewportBbox.top],
+        [viewportBbox.left + viewportBbox.width,    viewportBbox.top + viewportBbox.height],
+        [viewportBbox.left,                         viewportBbox.top + viewportBbox.height]
     ];
     return this.insidePoly([thisNode.screenX, thisNode.screenY],screenCorners);
 };
@@ -521,6 +517,8 @@ realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
     
     var visibleFrames = [];
     
+    let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+    
     var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
     for (var objectKey in visibleObjects) {
         if (!visibleObjects.hasOwnProperty(objectKey)) continue;
@@ -537,14 +535,14 @@ realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
                 // Use the getBoundingClientRect to check approximate overlap between frame bounds and screen bounds
 
                 var upperLeftScreen = {
-                    x: 0,
-                    y: 0
+                    x: viewportBbox.left,
+                    y: viewportBbox.top
                 };
 
                 // noinspection JSSuspiciousNameCombination - This is correct, globalStates.height is actually the width
                 var bottomRightScreen = {
-                    x: globalStates.height,
-                    y: globalStates.width
+                    x: viewportBbox.left + viewportBbox.width,
+                    y: viewportBbox.top + viewportBbox.height
                 };
 
                 var frameClientRect = globalDOMCache['iframe' + frameKey].getBoundingClientRect();

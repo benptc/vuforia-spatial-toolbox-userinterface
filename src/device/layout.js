@@ -112,11 +112,6 @@ createNameSpace('realityEditor.device.layout');
      * rather than adding another window.onResize listener, so that code triggers in the right order
      */
     function windowResizeHandler() {
-        // noinspection JSSuspiciousNameCombination
-        globalStates.height = window.innerWidth;
-        // noinspection JSSuspiciousNameCombination
-        globalStates.width = window.innerHeight;
-
         // reformat pocket tile size/arrangement
         realityEditor.gui.pocket.onWindowResized();
         
@@ -187,6 +182,14 @@ createNameSpace('realityEditor.device.layout');
      */
     function onWindowResized(callback) {
         callbacks.onWindowResized.push(callback);
+
+        // call it once immediately, too
+        callback({
+            width: (window.innerWidth - viewportMargins.left - viewportMargins.right),
+            height: (window.innerHeight - viewportMargins.top - viewportMargins.bottom),
+            top: viewportMargins.top,
+            left: viewportMargins.left
+        });
     }
 
     /**
@@ -195,13 +198,13 @@ createNameSpace('realityEditor.device.layout');
      *  to fit awkward, non-rectangular screens (looking at you, iPhone X).
      */
     function adjustForScreenSize() {
-        var menuHeightDifference = globalStates.width - MENU_HEIGHT;
+        var menuHeightDifference = window.innerHeight - MENU_HEIGHT;
 
         // vertically center the menu if the screen is taller than 320 px
         document.getElementById('UIButtons').style.top = menuHeightDifference / 2 + 'px';
 
         // vertically center the crafting board by updating the global variable it uses
-        CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
+        CRAFTING_GRID_HEIGHT = window.innerHeight - menuHeightDifference;
 
         adjustRightEdgeIfNeeded();
     }
@@ -302,7 +305,8 @@ createNameSpace('realityEditor.device.layout');
      * @return {number}
      */
     function getTrashThresholdX() {
-        return (globalStates.height - TRASH_WIDTH - rightEdgeOffset);
+        let viewportBbox = getViewportBoundingBox();
+        return ((viewportBbox.left + viewportBbox.width) - TRASH_WIDTH - rightEdgeOffset);
     }
 
     /**

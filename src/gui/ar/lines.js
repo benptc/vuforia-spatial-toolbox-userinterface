@@ -362,8 +362,6 @@ realityEditor.gui.ar.lines.ballSize = 0;
 realityEditor.gui.ar.lines.x__ = 0;
 realityEditor.gui.ar.lines.y__ = 0;
 realityEditor.gui.ar.lines.ballPosition  = 0;
-realityEditor.gui.ar.lines.width  = globalStates.width;
-realityEditor.gui.ar.lines.height  = globalStates.height;
 realityEditor.gui.ar.lines.extendedBorder = 200;
 realityEditor.gui.ar.lines.extendedBorderNegative = -200;
 realityEditor.gui.ar.lines.nodeExistsA = true;
@@ -373,6 +371,7 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     this.nodeExistsA = true;
    this.nodeExistsB = true;
 
+   let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
    
     if (lineStartPoint[0] < this.extendedBorderNegative) {
         lineStartPoint[0] = this.extendedBorderNegative;
@@ -390,20 +389,20 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         lineEndPoint[1] = this.extendedBorderNegative;
         this.nodeExistsB = false;
     }
-    if (lineStartPoint[0] > globalStates.height+this.extendedBorder) {
-        lineStartPoint[0] = globalStates.height+this.extendedBorder;
+    if (lineStartPoint[0] > viewportBbox.width + this.extendedBorder) {
+        lineStartPoint[0] = viewportBbox.width + this.extendedBorder;
         this.nodeExistsA = false;
     }
-    if (lineStartPoint[1] > globalStates.width+this.extendedBorder) {
-        lineStartPoint[1] = globalStates.width+this.extendedBorder;
+    if (lineStartPoint[1] > viewportBbox.height + this.extendedBorder) {
+        lineStartPoint[1] = viewportBbox.height + this.extendedBorder;
         this.nodeExistsA = false;
     }
-    if (lineEndPoint[0] > globalStates.height+this.extendedBorder) {
-        lineEndPoint[0] = globalStates.height+this.extendedBorder;
+    if (lineEndPoint[0] > viewportBbox.width + this.extendedBorder) {
+        lineEndPoint[0] = viewportBbox.width + this.extendedBorder;
         this.nodeExistsB = false;
     }
-    if (lineEndPoint[1] > globalStates.width+this.extendedBorder) {
-        lineEndPoint[1] = globalStates.width+this.extendedBorder;
+    if (lineEndPoint[1] > viewportBbox.height + this.extendedBorder) {
+        lineEndPoint[1] = viewportBbox.height + this.extendedBorder;
         this.nodeExistsB = false;
     }
     

@@ -306,8 +306,9 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
                         iframe.style.width = groupedFrame.frameSizeX + 'px';
                         iframe.style.height = groupedFrame.frameSizeY + 'px';
-                        iframe.style.left = ((globalStates.height - parseFloat(groupedFrame.frameSizeX)) / 2) + "px";
-                        iframe.style.top = ((globalStates.width - parseFloat(groupedFrame.frameSizeY)) / 2) + "px";
+                        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+                        iframe.style.left = ((viewportBbox.width - parseFloat(groupedFrame.frameSizeX)) / 2) + "px";
+                        iframe.style.top = ((viewportBbox.height - parseFloat(groupedFrame.frameSizeY)) / 2) + "px";
 
                         overlay.style.width = iframe.style.width;
                         overlay.style.height = iframe.style.height;

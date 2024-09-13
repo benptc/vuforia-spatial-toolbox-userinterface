@@ -568,11 +568,13 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             var iframe = globalDOMCache['iframe' + activeKey];
             var overlay = globalDOMCache[activeKey];
             var svg = globalDOMCache['svg' + activeKey];
+            
+            let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
 
             iframe.style.width = thisFrame.frameSizeX + 'px';
             iframe.style.height = thisFrame.frameSizeY + 'px';
-            iframe.style.left = ((globalStates.height - parseFloat(thisFrame.frameSizeX)) / 2) + "px";
-            iframe.style.top = ((globalStates.width - parseFloat(thisFrame.frameSizeY)) / 2) + "px";
+            iframe.style.left = ((viewportBbox.width - parseFloat(thisFrame.frameSizeX)) / 2) + "px";
+            iframe.style.top = ((viewportBbox.height - parseFloat(thisFrame.frameSizeY)) / 2) + "px";
 
             overlay.style.width = iframe.style.width;
             overlay.style.height = iframe.style.height;
