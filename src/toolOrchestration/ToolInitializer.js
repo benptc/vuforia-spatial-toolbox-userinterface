@@ -63,10 +63,14 @@ export default class ToolInitializer {
             // pageY: screenY,
             // initialMatrix: undefined,
 
-        let tool = new SpatialTool(objectId, frame.uuid, manifest);
+        let tool = this.createSpatialToolInfo(objectId, frame.uuid, manifest); // new SpatialTool(objectId, frame.uuid, manifest);
         // this.spatialTools[frame.uuid] = tool;
 
         return tool;
+    }
+    
+    createSpatialToolInfo(objectId, frameId, manifest) {
+        return new SpatialTool(objectId, frameId, manifest);
     }
 
     initializeDomElements(objectId, frameId, appInfo) {
@@ -139,7 +143,8 @@ export default class ToolInitializer {
 
         }
         
-        if (manifest.entryPoints.sidebar) {
+        let sidebarContainer = document.querySelector('.sidebar-iframe-container');
+        if (manifest.entryPoints.sidebar && sidebarContainer) {
             let {
                 addContainer,
                 addIframe,
@@ -171,7 +176,7 @@ export default class ToolInitializer {
 
             addOverlay.style.display = 'none';
 
-            document.querySelector('.sidebar-iframe-container').appendChild(addContainer);
+            sidebarContainer.appendChild(addContainer);
             addContainer.appendChild(addIframe);
             addContainer.appendChild(addOverlay);
             addOverlay.appendChild(addSVG);

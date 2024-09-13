@@ -1923,7 +1923,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
     var activeKey = nodeKey ? nodeKey : frameKey;
     var isFrameElement = activeKey === frameKey;
     
-    if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
+    if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true && (activeType !== 'ui' || activeVehicle.registeredWithOrchestrator === true)) {
         this.notLoading = activeKey;
         
         // assign the element some default properties if they don't exist

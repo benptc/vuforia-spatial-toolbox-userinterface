@@ -47,6 +47,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import getToolOrchestrator from '../toolOrchestration/ToolOrchestrator.js';
+
 createNameSpace("realityEditor.network");
 
 realityEditor.network.state = {
@@ -512,16 +514,25 @@ realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, 
         positionData.matrix = [];
     }
 
-    realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
-    realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(objectKey, frameKey, thisFrame, positionData.matrix);
+    thisFrame.registeredWithOrchestrator = false;
 
-    for (let nodeKey in thisFrame.nodes) {
-        var thisNode = thisFrame.nodes[nodeKey];
-        realityEditor.network.initializeDownloadedNode(objectKey, frameKey, nodeKey, thisNode);
-    }
+    let orchestrator = getToolOrchestrator();
+    orchestrator.registerDownloadedFrame(objectKey, frameKey).then((result) => {
+        console.log(`registered downloaded frame with orchestrator ${frameKey}`, result);
 
-    // TODO: invert dependency
-    realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+        thisFrame.registeredWithOrchestrator = true;
+
+        realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
+        realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(objectKey, frameKey, thisFrame, positionData.matrix);
+
+        for (let nodeKey in thisFrame.nodes) {
+            var thisNode = thisFrame.nodes[nodeKey];
+            realityEditor.network.initializeDownloadedNode(objectKey, frameKey, nodeKey, thisNode);
+        }
+
+        // TODO: invert dependency
+        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+    });
 };
 
 realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, nodeKey, thisNode) {

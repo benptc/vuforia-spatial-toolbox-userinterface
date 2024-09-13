@@ -1,3 +1,5 @@
+import getToolOrchestrator from '../toolOrchestration/ToolOrchestrator.js';
+
 createNameSpace("realityEditor.spatialCursor");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
@@ -415,6 +417,9 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
             initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
             onUploadComplete: () => {
                 realityEditor.network.postVehiclePosition(addedElement);
+                getToolOrchestrator().registerDownloadedFrame(addedElement.objectId, addedElement.uuid).then((_result) => {
+                    addedElement.registeredWithOrchestrator = true;
+                });
                 if (typeof onToolUploadComplete === 'function') {
                     onToolUploadComplete(addedElement);
                 }
@@ -478,6 +483,9 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
             pageY: screenY,
             initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
             onUploadComplete: () => {
+                getToolOrchestrator().registerDownloadedFrame(addedElement.objectId, addedElement.uuid).then((_result) => {
+                    addedElement.registeredWithOrchestrator = true;
+                });
                 realityEditor.network.postVehiclePosition(addedElement);
             }
         });
