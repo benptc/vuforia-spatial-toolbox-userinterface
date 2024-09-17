@@ -391,7 +391,7 @@ import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
-    async function addToolAtScreenCenter(toolName, { moveToCursor = false, onToolUploadComplete = null} = {}) {
+    async function addToolAtScreenCenter(toolName, { moveToCursor = false, onToolUploadComplete = null, newToolCreation = false} = {}) {
         
         let spatialCursorMatrix = null;
         if (moveToCursor) {

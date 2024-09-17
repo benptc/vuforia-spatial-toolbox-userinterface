@@ -238,7 +238,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {string} frameId
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the exit button or from within the envelope
      */
-    function closeEnvelope(frameId, wasTriggeredByEnvelope) {
+    function closeEnvelope(frameId, wasTriggeredByEnvelope = false) {
         const envelope = knownEnvelopes[frameId];
         if (!envelope.isOpen) return;
 

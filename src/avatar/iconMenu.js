@@ -32,23 +32,26 @@ createNameSpace("realityEditor.avatar.iconMenu");
         onAvatarIconMenuItemSelected((params) => {
             if (!(params.isMyIcon && params.buttonText === realityEditor.avatar.iconMenu.MENU_ITEMS.EditName)) return;
             // show a modal that lets you type in a name
-            realityEditor.gui.modal.openInputModal({
-                headerText: 'Edit Avatar Name',
-                descriptionText: 'Specify the name that other users will see.',
-                inputPlaceholderText: 'Your username here',
-                onSubmitCallback: (e, userName) => {
-                    if (userName && typeof userName === 'string') {
-                        userName = userName.trim();
-                        if (userName.length === 0) {
-                            userName = 'Anonymous';
-                        }
-                        realityEditor.avatar.setMyUsername(userName);
-                        realityEditor.avatar.writeUsername(userName);
-                        // write to window.localStorage and use instead of anonymous in the future in this browser
-                        window.localStorage.setItem('manuallyEnteredUsername', userName);
+            displayEditUsernameModal();
+        });
+    }
+    function displayEditUsernameModal() {
+        realityEditor.gui.modal.openInputModal({
+            headerText: 'Edit User Name',
+            descriptionText: 'Specify the name that other users will see.',
+            inputPlaceholderText: 'Your username here',
+            onSubmitCallback: (e, userName) => {
+                if (typeof userName === 'string') {
+                    userName = userName.trim();
+                    if (userName.length === 0) {
+                        userName = null; //'Anonymous';
                     }
+                    realityEditor.avatar.setMyUsername(userName);
+                    realityEditor.avatar.writeUsername(userName);
+                    // write to window.localStorage and use instead of anonymous in the future in this browser
+                    window.localStorage.setItem('manuallyEnteredUsername', userName);
                 }
-            });
+            }
         });
     }
     /**
@@ -409,6 +412,7 @@ createNameSpace("realityEditor.avatar.iconMenu");
     exports.initService = initService;
     exports.renderAvatarIconList = renderAvatarIconList;
     exports.onAvatarIconMenuItemSelected = onAvatarIconMenuItemSelected;
+    exports.displayEditUsernameModal = displayEditUsernameModal;
     exports.MENU_ITEMS = MENU_ITEMS;
 
 }(realityEditor.avatar.iconMenu));

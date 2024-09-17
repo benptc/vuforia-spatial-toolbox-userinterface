@@ -51,14 +51,14 @@ export class MapShaderSettingsUI {
         document.body.appendChild(this.root);
         this.setInitialPosition();
         this.hide(); // It is important to set the menu's position before hiding it, otherwise its width will be calculated as 0
-    }
+}
 
     /**
      * Sets the initial position of the settings UI to be in the top right corner of the screen, under the navbar and menu button
      */
     setInitialPosition() {
-        const navbar = document.querySelector('.desktopMenuBar');
-        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        // const navbar = document.querySelector('.desktopMenuBar');
+        // const navbarHeight = navbar ? navbar.offsetHeight : 0;
         // const sessionMenuContainer = document.querySelector('#sessionMenuContainer');
         // const sessionMenuLeft = sessionMenuContainer ? sessionMenuContainer.offsetLeft : 0;
         // if (sessionMenuContainer) { // Avoid the top right menu
@@ -66,8 +66,9 @@ export class MapShaderSettingsUI {
         //     this.root.style.left = `calc(${sessionMenuLeft - this.root.offsetWidth}px - 6em)`;
         //     return;
         // }
-        this.root.style.top = `calc(${navbarHeight}px + 2em)`;
-        this.root.style.left = `calc(${window.innerWidth - this.root.offsetWidth}px - 2em)`;
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        this.root.style.top = `calc(${viewportBbox.top}px + 2em)`;
+        this.root.style.left = `calc(${viewportBbox.width - this.root.offsetWidth}px - 2em)`;
         this.snapToFitScreen();
     }
 
@@ -237,20 +238,21 @@ export class MapShaderSettingsUI {
      * If the settings menu is out of bounds, snap it back into the screen
      */
     snapToFitScreen() {
-        const navbar = document.querySelector('.desktopMenuBar');
-        const navbarHeight = navbar ? navbar.offsetHeight : 0;
-        if (this.root.offsetTop < navbarHeight) {
-            this.root.style.top = `${navbarHeight}px`;
+        // const navbar = document.querySelector('.desktopMenuBar');
+        // const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
+        if (this.root.offsetTop < viewportBbox.top) {
+            this.root.style.top = `${viewportBbox.top}px`;
         }
-        if (this.root.offsetLeft < 0) {
-            this.root.style.left = '0px';
+        if (this.root.offsetLeft < viewportBbox.left) {
+            this.root.style.left = `${viewportBbox.left}px`;
         }
-        if (this.root.offsetLeft + this.root.offsetWidth > window.innerWidth) {
-            this.root.style.left = `${window.innerWidth - this.root.offsetWidth}px`;
+        if (this.root.offsetLeft + this.root.offsetWidth > (viewportBbox.left + viewportBbox.width)) {
+            this.root.style.left = `${(viewportBbox.left + viewportBbox.width) - this.root.offsetWidth}px`;
         }
         // Keep the header visible on the screen off the bottom
-        if (this.root.offsetTop + this.root.querySelector('.hpa-settings-header').offsetHeight > window.innerHeight) {
-            this.root.style.top = `${window.innerHeight - this.root.querySelector('.hpa-settings-header').offsetHeight}px`;
+        if (this.root.offsetTop + this.root.querySelector('.hpa-settings-header').offsetHeight > (viewportBbox.top + viewportBbox.height)) {
+            this.root.style.top = `${(viewportBbox.top + viewportBbox.height) - this.root.querySelector('.hpa-settings-header').offsetHeight}px`;
         }
     }
 

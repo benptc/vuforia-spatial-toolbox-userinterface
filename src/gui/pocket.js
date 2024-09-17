@@ -1446,7 +1446,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     function pocketShown() {
-        return pocket.classList.contains('pocketShown');
+        return pocket && pocket.classList.contains('pocketShown');
     }
 
     /**

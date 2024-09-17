@@ -108,19 +108,37 @@ class ToolOrchestrator {
             // TODO: validate the manifest against a schema before proceeding
 
             if (manifestJson) {
+
+                let spatialCursorMatrix = null;
+                // const moveToCursor = false;
+                // if (moveToCursor) {
+                //     spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
+                // } else {
+                    let info = await realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
+                    if (info.didFindCenterPoint) {
+                        spatialCursorMatrix = info.matrix;
+                    }
+                // }
+
+                // verify that the matrix is valid, otherwise tool can init with NaN values
+                if (!realityEditor.gui.ar.utilities.isValidMatrix4x4(spatialCursorMatrix)) {
+                    spatialCursorMatrix = null;
+                }
+                
+                let viewportCenter = realityEditor.device.layout.getViewportCenter();
                 // let appInfo = this.initializeApp(manifestJson, basePath);
                 let appInfo = this.toolInitializer.initializeApp(objectId, manifestJson, basePath, {
                     noUserInteraction: true,
-                    pageX: screenX,
-                    pageY: screenY,
-                    initialMatrix: undefined,
+                    pageX: viewportCenter.x,
+                    pageY: viewportCenter.y,
+                    initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
                     onUploadComplete: () => {
                         let addedFrame = realityEditor.getFrame(appInfo.objectId, appInfo.frameId);
                         realityEditor.network.postVehiclePosition(addedFrame);
                         addedFrame.registeredWithOrchestrator = true;
                     }
                 });
-                
+
                 this.spatialTools[appInfo.frameId] = appInfo;
 
                 realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {

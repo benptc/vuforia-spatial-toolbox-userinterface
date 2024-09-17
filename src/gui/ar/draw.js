@@ -2020,6 +2020,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
  * @param {string} frameKey
  * @param {string} nodeKey
  * @param {Frame|Node} activeVehicle
+ * @param {string|undefined} frameRole - "sidebar" if we are building the tool's iframe to go into the sidebar
  * @return {{addContainer: HTMLDivElement, addIframe: HTMLIFrameElement, addOverlay: HTMLDivElement, addSVG: HTMLElement}}
  */
 realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle, frameRole) {
@@ -2035,6 +2036,10 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addContainer.classList.add("main");
     addContainer.style.width = viewportBbox.width + "px";
     addContainer.style.height = viewportBbox.height + "px";
+    if (frameRole !== 'sidebar') {
+        addContainer.style.left = viewportBbox.left + 'px';
+        addContainer.style.top = viewportBbox.top + 'px';
+    }
     if (nodeKey) {
         addContainer.classList.add('hiddenNodeContainer');
     } else {

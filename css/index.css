@@ -807,7 +807,7 @@ body {
     background: transparent;
     pointer-events: none;
     /*z-index: 5;*/
-    z-index: 1000;
+    z-index: 900;
     transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 1);
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 1);
 }

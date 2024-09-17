@@ -463,15 +463,15 @@ createNameSpace("realityEditor.gui.glRenderer");
             workerId: workerIds[toolId]
         }), '*');
 
-        const {width, height} = globalStates;
+        let viewportBbox = realityEditor.device.layout.getViewportBoundingBox();
 
         setTimeout(() => {
             worker.postMessage({
                 name: 'bootstrap',
                 functions,
                 constants,
-                width: height,
-                height: width,
+                width: viewportBbox.width,
+                height: viewportBbox.height,
             }, '*');
         }, 200);
     }

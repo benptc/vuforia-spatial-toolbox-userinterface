@@ -27,7 +27,11 @@ export default class ToolInitializer {
         frame.location = 'global';
         frame.src = frameSrc;
 
-        frame.ar.scale = globalStates.defaultScale;
+        if (manifest.entryPoints.viewport && manifest.entryPoints.viewport.defaultScale) {
+            frame.ar.scale = manifest.entryPoints.viewport.defaultScale;
+        } else {
+            frame.ar.scale = globalStates.defaultScale;
+        }
         // populate properties not contained on server (not in constructor)
         // frame.begin = utils.newIdentityMatrix(); // TODO: try removing this
         frame.loaded = false;

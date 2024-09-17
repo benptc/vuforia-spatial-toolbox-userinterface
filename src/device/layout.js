@@ -125,6 +125,8 @@ createNameSpace('realityEditor.device.layout');
             nodeConnectionCanvas.height = viewportHeight;
             nodeConnectionCanvas.style.width = nodeConnectionCanvas.width + 'px';
             nodeConnectionCanvas.style.height = nodeConnectionCanvas.height + 'px';
+            nodeConnectionCanvas.style.left = viewportMargins.left + 'px';
+            nodeConnectionCanvas.style.top = viewportMargins.top + 'px';
         }
 
         // adjust the size of each tool's container div to match the viewport...

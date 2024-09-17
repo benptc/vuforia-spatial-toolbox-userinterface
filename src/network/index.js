@@ -484,54 +484,58 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     });
 };
 
-realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, thisFrame) {
-    // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
-    thisFrame.screenZ = 1000;
-    thisFrame.fullScreen = false;
-    thisFrame.sendMatrix = false;
-    thisFrame.sendMatrices = {
-        model: false,
-        view: false,
-        modelView : false,
-        devicePose : false,
-        groundPlane : false,
-        anchoredModelView: false,
-        allObjects : false
-    };
-    thisFrame.sendScreenPosition = false;
-    thisFrame.sendAcceleration = false;
-    thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, "")) || 300;
-    thisFrame.visible = false;
-    thisFrame.objectId = objectKey;
+realityEditor.network.initializeDownloadedFrame = async function(objectKey, frameKey, thisFrame) {
+    return new Promise((resolve, reject) => {
+        // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+        thisFrame.screenZ = 1000;
+        thisFrame.fullScreen = false;
+        thisFrame.sendMatrix = false;
+        thisFrame.sendMatrices = {
+            model: false,
+            view: false,
+            modelView : false,
+            devicePose : false,
+            groundPlane : false,
+            anchoredModelView: false,
+            allObjects : false
+        };
+        thisFrame.sendScreenPosition = false;
+        thisFrame.sendAcceleration = false;
+        thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, "")) || 300;
+        thisFrame.visible = false;
+        thisFrame.objectId = objectKey;
 
-    if (typeof thisFrame.developer === 'undefined') {
-        thisFrame.developer = true;
-    }
-
-    var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
-
-    if (positionData.matrix === null || typeof positionData.matrix !== "object") {
-        positionData.matrix = [];
-    }
-
-    thisFrame.registeredWithOrchestrator = false;
-
-    let orchestrator = getToolOrchestrator();
-    orchestrator.registerDownloadedFrame(objectKey, frameKey).then((result) => {
-        console.log(`registered downloaded frame with orchestrator ${frameKey}`, result);
-
-        thisFrame.registeredWithOrchestrator = true;
-
-        realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
-        realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(objectKey, frameKey, thisFrame, positionData.matrix);
-
-        for (let nodeKey in thisFrame.nodes) {
-            var thisNode = thisFrame.nodes[nodeKey];
-            realityEditor.network.initializeDownloadedNode(objectKey, frameKey, nodeKey, thisNode);
+        if (typeof thisFrame.developer === 'undefined') {
+            thisFrame.developer = true;
         }
 
-        // TODO: invert dependency
-        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
+
+        if (positionData.matrix === null || typeof positionData.matrix !== "object") {
+            positionData.matrix = [];
+        }
+
+        thisFrame.registeredWithOrchestrator = false;
+
+        let orchestrator = getToolOrchestrator();
+        orchestrator.registerDownloadedFrame(objectKey, frameKey).then((result) => {
+            console.log(`registered downloaded frame with orchestrator ${frameKey}`, result);
+
+            thisFrame.registeredWithOrchestrator = true;
+
+            realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
+            realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(objectKey, frameKey, thisFrame, positionData.matrix);
+
+            for (let nodeKey in thisFrame.nodes) {
+                var thisNode = thisFrame.nodes[nodeKey];
+                realityEditor.network.initializeDownloadedNode(objectKey, frameKey, nodeKey, thisNode);
+            }
+
+            // TODO: invert dependency
+            realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+
+            resolve();
+        });
     });
 };
 
@@ -674,7 +678,7 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  * @param {string} objectKey
  * @param {string} avatarName
  */
-realityEditor.network.updateObject = function (origin, remote, objectKey, avatarName) {
+realityEditor.network.updateObject = async function (origin, remote, objectKey, avatarName) {
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -707,8 +711,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, avatar
             origin.frames[frameKey].height = remote.frames[frameKey].height || 300;
 
             origin.frames[frameKey].uuid = frameKey;
-            
-            realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
+
+            await realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
             // todo Steve: added a new frame
             realityEditor.network.callbackHandler.triggerCallbacks('frameAdded', {objectKey: objectKey, frameKey: frameKey, frameType: origin.frames[frameKey].src, nodeKey: null, additionalInfo: {avatarName: avatarName}});
 
@@ -1004,7 +1008,9 @@ realityEditor.network.onAction = function (action) {
                 }
                 
                 let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(thisAction.lastEditor);
-                realityEditor.network.updateObject(objects[objectKey], res, objectKey, avatarId);
+                realityEditor.network.updateObject(objects[objectKey], res, objectKey, avatarId).then(() => {
+                    console.log('object updated');
+                });
 
                 _this.cout("got object");
 
@@ -3348,6 +3354,14 @@ realityEditor.network.onSidebarElementLoad = function (objectKey, frameKey, node
         // realityEditor.network.callbackHandler.triggerCallbacks('elementLoaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
     }
 
+    // hide the sidebar iframe by default if we haven't focused on this tool (yet)
+    let shouldBeVisible = realityEditor.envelopeManager.getFocusedEnvelopes().some(envelope => {
+        return envelope.frame === frameKey
+    });
+    if (!shouldBeVisible) {
+        globalDOMCache['iframe' + frameKey + idSuffix].classList.add('hidden');
+    }
+
     // this is used so we can render a placeholder until it loads
     globalDOMCache['iframe' + frameKey + idSuffix].dataset.doneLoading = true;
     
@@ -3577,7 +3591,9 @@ realityEditor.network.searchAndDownloadUnpinnedFrames = function (ip, port) {
             let index = object.unpinnedFrameKeys.indexOf(matchingFrame.uuid);
             if (index > -1) {
                 object.frames[matchingFrame.uuid] = matchingFrame;
-                realityEditor.network.initializeDownloadedFrame(matchingFrame.objectId, matchingFrame.uuid, matchingFrame);
+                realityEditor.network.initializeDownloadedFrame(matchingFrame.objectId, matchingFrame.uuid, matchingFrame).then(() => {
+                    console.log('search and download unpinned frame, frame initialized');
+                });
 
                 // it's still unpinned, but it's already downloaded so it can be removed from this list
                 object.unpinnedFrameKeys.splice(index, 1);

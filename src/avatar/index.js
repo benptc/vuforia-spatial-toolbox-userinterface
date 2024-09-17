@@ -68,7 +68,8 @@ createNameSpace("realityEditor.avatar");
     };
 
     let callbacks = {
-        onMyAvatarInitialized: []
+        onMyAvatarInitialized: [],
+        onMyAvatarUsernameUpdated: [],
     };
 
     let isDesktop = false;
@@ -582,6 +583,8 @@ createNameSpace("realityEditor.avatar");
         draw.updateAvatarName(myAvatarId, name);
         iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
 
+        callbacks.onMyAvatarUsernameUpdated.forEach(cb => cb(name));
+
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
             network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
@@ -849,8 +852,16 @@ createNameSpace("realityEditor.avatar");
         }
     }
 
+    function registerOnMyAvatarUsernameUpdatedCallback(callback) {
+        callbacks.onMyAvatarUsernameUpdated.push(callback);
+        // if (myUsername) {
+            callback(myUsername);
+        // }
+    }
+
     exports.initService = initService;
     exports.registerOnMyAvatarInitializedCallback = registerOnMyAvatarInitializedCallback;
+    exports.registerOnMyAvatarUsernameUpdatedCallback = registerOnMyAvatarUsernameUpdatedCallback;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
     exports.toggleDebugMode = toggleDebugMode;
