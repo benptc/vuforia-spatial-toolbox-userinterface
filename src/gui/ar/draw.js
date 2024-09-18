@@ -2036,7 +2036,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addContainer.classList.add("main");
     addContainer.style.width = viewportBbox.width + "px";
     addContainer.style.height = viewportBbox.height + "px";
-    if (frameRole !== 'sidebar') {
+    if (frameRole !== 'sidebar' && frameRole !== 'footer') {
         addContainer.style.left = viewportBbox.left + 'px';
         addContainer.style.top = viewportBbox.top + 'px';
     }
@@ -2063,10 +2063,12 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.setAttribute("data-node-key", nodeKey);
     // TODO: adjust based on role
     
-    if (frameRole !== 'sidebar') {
-        addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
-    } else {
+    if (frameRole === 'sidebar') {
         addIframe.setAttribute("onload", 'realityEditor.network.onSidebarElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    } else if (frameRole === 'footer') {
+        addIframe.setAttribute("onload", 'realityEditor.network.onFooterElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    } else {
+        addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
     }
     // TODO: remove this 'sandbox' attribute if you try to embed iframes within the tool's iframe and you run into browser restrictions
     let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';

@@ -154,7 +154,7 @@ export default class ToolInitializer {
                 addIframe,
                 addOverlay,
                 addSVG
-            } = this.createSidebarElements(objectId, frameId, manifest.entryPoints.sidebar);
+            } = this.createSidebarElements(objectId, frameId, 'sidebar', manifest.entryPoints.sidebar);
 
             console.log('created sidebar elements');
 
@@ -205,9 +205,57 @@ export default class ToolInitializer {
             // add touch event listeners
             realityEditor.device.addTouchListenersForElement(addOverlay, frame);
         }
+
+        let footerContainer = document.querySelector('.footer-iframe-container');
+        if (manifest.entryPoints.footer && footerContainer) {
+            let {
+                addContainer,
+                addIframe,
+                addOverlay,
+                addSVG
+            } = this.createSidebarElements(objectId, frameId, 'footer', manifest.entryPoints.footer);
+
+            console.log('created footer elements');
+
+            addIframe.classList.remove('hiddenFrame');
+            addIframe.classList.add('visibleFrame');
+
+            let footerHeight = (manifest.entryPoints.footer.height || 100) + 'px';
+            addContainer.style.width = '100%';
+            addContainer.style.height = footerHeight;
+            addIframe.style.left = '0';
+            addIframe.style.top = '0';
+            addIframe.style.width = '100%';
+            addIframe.style.height = footerHeight;
+            addOverlay.style.left = '0';
+            addOverlay.style.top = '0';
+            addOverlay.style.width = '100%';
+            addOverlay.style.height = footerHeight;
+
+            addOverlay.objectId = objectId;
+            addOverlay.frameId = frameId;
+            addOverlay.nodeId = null;
+            addOverlay.type = 'ui';
+
+            addOverlay.style.display = 'none';
+
+            footerContainer.appendChild(addContainer);
+            addContainer.appendChild(addIframe);
+            addContainer.appendChild(addOverlay);
+            addOverlay.appendChild(addSVG);
+
+            // cache references to these elements to more efficiently retrieve them in the future
+            globalDOMCache[addContainer.id] = addContainer;
+            globalDOMCache[addIframe.id] = addIframe;
+            globalDOMCache[addOverlay.id] = addOverlay;
+            globalDOMCache[addSVG.id] = addSVG;
+
+            // add touch event listeners
+            realityEditor.device.addTouchListenersForElement(addOverlay, frame);
+        }
     }
 
-    createSidebarElements(objectId, frameId, entryPoint) {
+    createSidebarElements(objectId, frameId, frameRole = 'sidebar', entryPoint) {
         let frame = realityEditor.getFrame(objectId, frameId);
         if (!frame) return;
 
@@ -216,7 +264,7 @@ export default class ToolInitializer {
         // var frameUrl = realityEditor.network.getURL(this.activeObject.ip, realityEditor.network.getPort(objects[objectKey]), "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/");
         let iframeUrl = realityEditor.network.availableFrames.getFrameSrc(objectId, frame.src).replace('index.html', entryPoint.url);
         // let id = frameId + '_sidebar';
-        return realityEditor.gui.ar.draw.createSubElements(iframeUrl, objectId, frameId, null, frame, 'sidebar');
+        return realityEditor.gui.ar.draw.createSubElements(iframeUrl, objectId, frameId, null, frame, frameRole);
 
         // return {
         //     addContainer: null,
@@ -244,28 +292,28 @@ export default class ToolInitializer {
         // };
     }
 
-    createIframe(appId, basePath, entryPoint, role) {
-        const iframe = document.createElement('iframe');
-        iframe.src = this.getFullPath(basePath, entryPoint.url);
-
-        // Apply sandbox attributes
-        // Exclude 'allow-same-origin' unless necessary
-        // iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-pointer-lock');
-        let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
-        iframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
-
-        // Set dimensions
-        iframe.style.width = entryPoint.width || '100%';
-        iframe.style.height = entryPoint.height || '100%';
-
-        // Assign a unique ID to the iframe
-        iframe.id = `iframe-${role}`;
-
-        // Add any other necessary attributes
-        iframe.setAttribute('allow', 'fullscreen'); // If needed
-
-        return iframe;
-    }
+    // createIframe(appId, basePath, entryPoint, role) {
+    //     const iframe = document.createElement('iframe');
+    //     iframe.src = this.getFullPath(basePath, entryPoint.url);
+    //
+    //     // Apply sandbox attributes
+    //     // Exclude 'allow-same-origin' unless necessary
+    //     // iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-pointer-lock');
+    //     let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
+    //     iframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
+    //
+    //     // Set dimensions
+    //     iframe.style.width = entryPoint.width || '100%';
+    //     iframe.style.height = entryPoint.height || '100%';
+    //
+    //     // Assign a unique ID to the iframe
+    //     iframe.id = `iframe-${role}`;
+    //
+    //     // Add any other necessary attributes
+    //     iframe.setAttribute('allow', 'fullscreen'); // If needed
+    //
+    //     return iframe;
+    // }
 }
 
 class SpatialTool {

@@ -3214,8 +3214,11 @@ realityEditor.network.sendResetToLastCommit = function (objectKey) {
 };
 
 realityEditor.network.toBeInitialized = {};
-realityEditor.network.isFirstInitialization = function(objectKey, frameKey, nodeKey) {
+realityEditor.network.isFirstInitialization = function(objectKey, frameKey, nodeKey, entryPoint = null) {
     let activeKey = nodeKey || frameKey;
+    if (entryPoint) {
+        activeKey += `_${entryPoint}`;
+    }
     if (this.toBeInitialized[activeKey]) {
         delete this.toBeInitialized[activeKey];
         return true;
@@ -3339,7 +3342,7 @@ realityEditor.network.onSidebarElementLoad = function (objectKey, frameKey, node
         nodes: simpleNodes,
         port: realityEditor.network.getPort(object),
         interface: globalStates.interface,
-        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey), // TODO: make this independent from viewport
+        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey, 'sidebar'), // TODO: make this independent from viewport
         parentLocation: window.location.href
     };
     const idSuffix = '_sidebar';
@@ -3366,6 +3369,50 @@ realityEditor.network.onSidebarElementLoad = function (objectKey, frameKey, node
     globalDOMCache['iframe' + frameKey + idSuffix].dataset.doneLoading = true;
     
     console.log('onSidebarElementLoad done');
+}
+
+
+realityEditor.network.onFooterElementLoad = function (objectKey, frameKey, nodeKey) {
+    if (nodeKey === "null") nodeKey = null;
+    let object = realityEditor.getObject(objectKey);
+    let frame = realityEditor.getFrame(objectKey, frameKey);
+    let nodes = frame ? frame.nodes : {};
+    let simpleNodes = this.utilities.getNodesJsonForIframes(nodes);
+    let newStyle = {
+        object: objectKey,
+        frame: frameKey,
+        objectData: {},
+        node: nodeKey,
+        nodes: simpleNodes,
+        port: realityEditor.network.getPort(object),
+        interface: globalStates.interface,
+        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey, 'footer'), // TODO: make this independent from viewport
+        parentLocation: window.location.href
+    };
+    const idSuffix = '_footer';
+    globalDOMCache["iframe" + frameKey + idSuffix].setAttribute('loaded', true);
+    globalDOMCache["iframe" + frameKey + idSuffix].contentWindow.postMessage(JSON.stringify(newStyle), '*');
+
+    if (globalDOMCache['iframe' + frameKey + idSuffix].dataset.isReloading) {
+        delete globalDOMCache['iframe' + frameKey + idSuffix].dataset.isReloading;
+        // TODO: trigger callbacks for sidebar if needed
+        // realityEditor.network.callbackHandler.triggerCallbacks('elementReloaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
+    } else {
+        // realityEditor.network.callbackHandler.triggerCallbacks('elementLoaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
+    }
+
+    // hide the sidebar iframe by default if we haven't focused on this tool (yet)
+    let shouldBeVisible = realityEditor.envelopeManager.getFocusedEnvelopes().some(envelope => {
+        return envelope.frame === frameKey
+    });
+    if (!shouldBeVisible) {
+        globalDOMCache['iframe' + frameKey + idSuffix].classList.add('hidden');
+    }
+
+    // this is used so we can render a placeholder until it loads
+    globalDOMCache['iframe' + frameKey + idSuffix].dataset.doneLoading = true;
+
+    console.log('onFooterElementLoad done');
 }
 
 /**

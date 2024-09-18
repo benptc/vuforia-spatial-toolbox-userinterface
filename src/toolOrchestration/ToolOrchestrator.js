@@ -1,14 +1,27 @@
 import ToolInitializer from './ToolInitializer.js';
 
+const MESSAGE_PATHS = Object.freeze({
+    footerToViewport: 'footerToViewport',
+    sidebarToViewport: 'sidebarToViewport',
+    viewportToSidebar: 'viewportToSidebar',
+    viewportToFooter: 'viewportToFooter',
+});
+
 class ToolOrchestrator {
     constructor() {
         this.toolInitializer = new ToolInitializer();
         this.spatialTools = {}
 
-        realityEditor.network.addPostMessageHandler('sidebarToViewport', (msgContent, fullMessage) => {
+        realityEditor.network.addPostMessageHandler(MESSAGE_PATHS.sidebarToViewport, (msgContent, fullMessage) => {
             let frame = realityEditor.getFrame(fullMessage.object, fullMessage.frame);
             if (!frame) return;
-            this.handleMessageFromIframe('sidebarToViewport', fullMessage.object, fullMessage.frame, msgContent);
+            this.handleMessageFromIframe(MESSAGE_PATHS.sidebarToViewport, fullMessage.object, fullMessage.frame, msgContent);
+        });
+
+        realityEditor.network.addPostMessageHandler(MESSAGE_PATHS.footerToViewport, (msgContent, fullMessage) => {
+            let frame = realityEditor.getFrame(fullMessage.object, fullMessage.frame);
+            if (!frame) return;
+            this.handleMessageFromIframe(MESSAGE_PATHS.footerToViewport, fullMessage.object, fullMessage.frame, msgContent);
         });
     }
     
@@ -90,7 +103,11 @@ class ToolOrchestrator {
         }
     }
 
-    async createTool(objectId, toolName, basePath) {
+    async createTool(objectId, toolName, basePath, onUploadComplete) {
+        if (!basePath) {
+            let object = realityEditor.getObject(objectId);
+            basePath = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/frames/' + toolName);
+        }
         let manifestUrl = `${basePath}/app-manifest.json`;
 
         const placeholders = {
@@ -136,6 +153,10 @@ class ToolOrchestrator {
                         let addedFrame = realityEditor.getFrame(appInfo.objectId, appInfo.frameId);
                         realityEditor.network.postVehiclePosition(addedFrame);
                         addedFrame.registeredWithOrchestrator = true;
+                        
+                        if (typeof onUploadComplete === 'function') {
+                            onUploadComplete(addedFrame);
+                        }
                     }
                 });
 
@@ -214,28 +235,28 @@ class ToolOrchestrator {
         return `${basePath}/${filePath}`;
     }
 
-    createIframe(appId, basePath, entryPoint, role) {
-        const iframe = document.createElement('iframe');
-        iframe.src = this.getFullPath(basePath, entryPoint.url);
-
-        // Apply sandbox attributes
-        // Exclude 'allow-same-origin' unless necessary
-        // iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-pointer-lock');
-        let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
-        iframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
-
-        // Set dimensions
-        iframe.style.width = entryPoint.width || '100%';
-        iframe.style.height = entryPoint.height || '100%';
-
-        // Assign a unique ID to the iframe
-        iframe.id = `iframe-${role}`;
-
-        // Add any other necessary attributes
-        iframe.setAttribute('allow', 'fullscreen'); // If needed
-
-        return iframe;
-    }
+    // createIframe(appId, basePath, entryPoint, role) {
+    //     const iframe = document.createElement('iframe');
+    //     iframe.src = this.getFullPath(basePath, entryPoint.url);
+    //
+    //     // Apply sandbox attributes
+    //     // Exclude 'allow-same-origin' unless necessary
+    //     // iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-pointer-lock');
+    //     let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
+    //     iframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
+    //
+    //     // Set dimensions
+    //     iframe.style.width = entryPoint.width || '100%';
+    //     iframe.style.height = entryPoint.height || '100%';
+    //
+    //     // Assign a unique ID to the iframe
+    //     iframe.id = `iframe-${role}`;
+    //
+    //     // Add any other necessary attributes
+    //     iframe.setAttribute('allow', 'fullscreen'); // If needed
+    //
+    //     return iframe;
+    // }
 
     setupIframeMessaging(manifest) {
         // TODO: register the manifest routes so we can validate future sidebarToViewport messages
@@ -263,7 +284,7 @@ class ToolOrchestrator {
         let appInfo = this.spatialTools[frameId];
         let manifest = appInfo.manifest;
         
-        if (messagePath === 'sidebarToViewport') {
+        if (messagePath === MESSAGE_PATHS.sidebarToViewport) {
             console.log(`got sidebarToViewport message from ${frameId}`, msgContent);
             
             let allowedMessages = manifest.messages.sidebarToViewport;
@@ -273,6 +294,22 @@ class ToolOrchestrator {
             Object.keys(msgContent).forEach(unvalidatedKey => {
                 if (allowedMessages.includes(unvalidatedKey)) {
                     validatedMessageObject.sidebarToViewport[unvalidatedKey] = msgContent[unvalidatedKey];
+                }
+            });
+
+            realityEditor.network.postMessageIntoFrame(frameId, validatedMessageObject);
+
+        } else if (messagePath === MESSAGE_PATHS.footerToViewport) {
+
+            console.log(`got footerToViewport message from ${frameId}`, msgContent);
+
+            let allowedMessages = manifest.messages.footerToViewport;
+            let validatedMessageObject = {
+                footerToViewport: {}
+            };
+            Object.keys(msgContent).forEach(unvalidatedKey => {
+                if (allowedMessages.includes(unvalidatedKey)) {
+                    validatedMessageObject.footerToViewport[unvalidatedKey] = msgContent[unvalidatedKey];
                 }
             });
 
