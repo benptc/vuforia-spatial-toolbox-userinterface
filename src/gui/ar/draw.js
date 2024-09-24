@@ -2036,10 +2036,10 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addContainer.classList.add("main");
     addContainer.style.width = viewportBbox.width + "px";
     addContainer.style.height = viewportBbox.height + "px";
-    if (frameRole !== 'sidebar' && frameRole !== 'footer') {
-        addContainer.style.left = viewportBbox.left + 'px';
-        addContainer.style.top = viewportBbox.top + 'px';
-    }
+    // if (frameRole !== 'sidebar' && frameRole !== 'footer') {
+    //     addContainer.style.left = viewportBbox.left + 'px';
+    //     addContainer.style.top = viewportBbox.top + 'px';
+    // }
     if (nodeKey) {
         addContainer.classList.add('hiddenNodeContainer');
     } else {

@@ -96,7 +96,22 @@ class ToolOrchestrator {
                 console.log('Initialized app', appInfo);
                 return appInfo;
             } else {
-                throw new Error(`Couldn't load app-manifest.json for: ${frame.src}`);
+                // throw new Error(`Couldn't load app-manifest.json for: ${frame.src}`);
+
+                let appInfo = this.toolInitializer.createSpatialToolInfo(objectId, frameId, manifestJson);
+
+                this.spatialTools[appInfo.frameId] = appInfo;
+                console.log(this.spatialTools);
+
+                // realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {
+                //     objectKey: objectId,
+                //     frameKey: appInfo.frameId,
+                //     frameType: appInfo.src
+                // });
+
+                // this.setupIframeMessaging(manifestJson);
+
+                console.log('Initialized app', appInfo);
             }
         } catch (e) {
             return false;
@@ -173,7 +188,37 @@ class ToolOrchestrator {
                 console.log('Initialized app', appInfo);
                 return appInfo;
             } else {
-                throw new Error(`Couldn't load app-manifest.json for: ${toolName}`);
+                // throw new Error(`Couldn't load app-manifest.json for: ${toolName}`);
+
+                // let viewportCenter = realityEditor.device.layout.getViewportCenter();
+
+                // add a tool and store the path of the file in its publicData
+                // noinspection JSCheckFunctionSignatures
+                realityEditor.spatialCursor.addToolAtScreenCenter(toolName, {
+                    moveToCursor: false,
+                    onToolUploadComplete: (frame) => {
+                        // write the filepath into the publicData of the node
+                        // const writeFilepathToNode = (nodeKey) => {
+                        //     const dataKey = 'filePath';
+                        //     realityEditor.network.realtime.writePublicData(frame.objectId, frame.uuid, nodeKey, dataKey, serverFilepath);
+                        // };
+                        //
+                        // const existingNodeKey = Object.keys(frame.nodes).find(name => name.includes('storage'));
+                        // if (existingNodeKey) {
+                        //     writeFilepathToNode(existingNodeKey);
+                        // } else {
+                        //     realityEditor.network.onNodeAddedToFrame(frame.objectId, frame.uuid, (newNodeKey) => {
+                        //         if (newNodeKey.includes('storage')) {
+                        //             writeFilepathToNode(newNodeKey);
+                        //         }
+                        //     });
+                        // }
+
+                        if (typeof onUploadComplete === 'function') {
+                            onUploadComplete(frame);
+                        }
+                    }
+                });
             }
         } catch (e) {
             return false;

@@ -1,7 +1,7 @@
 // window.UI_MODE = 'CREO_VIEW';
 window.ENABLED_ADDONS = [
-    // 'pop-up-onboarding-addon',
-    'creo-view-addon'
+    'pop-up-onboarding-addon',
+    // 'creo-view-addon'
 ];
 
 /**

@@ -69,7 +69,9 @@ createNameSpace("realityEditor.envelopeManager");
             });
         });
 
-        realityEditor.device.layout.onWindowResized(({left, top}) => {
+        realityEditor.device.layout.onWindowResized(({viewport, fullWindow}) => {
+            // let { left, top } = viewport;
+            let { left, top } = fullWindow;
             updateExitButtonPosition(left, top);
             updateMinimizeButtonPosition(left, top);
         });
@@ -857,7 +859,7 @@ createNameSpace("realityEditor.envelopeManager");
         return frame.src;
     }
     
-    const DEBUG_DISABLE_BLUR_FULL_2D = true;
+    const DEBUG_DISABLE_BLUR_FULL_2D = false;
 
     function showBlurredBackground(focusedFrameId) {
         // create a fullscreen div with webkit-backdrop-filter: blur(), if it isn't already shown

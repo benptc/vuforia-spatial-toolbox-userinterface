@@ -80,12 +80,22 @@ createNameSpace('realityEditor.device.layout');
         onWindowResized: []
     }
 
+    // set these if there are title bars, notch insets, window framing, etc., which UI elements should avoid
+    let safeMargins = {
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0
+    };
+
     let viewportMargins = {
         left: 0,
         right: 0,
         top: 0,
         bottom: 0
     };
+
+    let toolIframeMarginRestrictions = {};
 
     function initService() {
         /**
@@ -104,6 +114,75 @@ createNameSpace('realityEditor.device.layout');
             }
         });
         resizeObserver.observe(document.body);
+
+        realityEditor.network.addPostMessageHandler('addViewportMarginLimitation', (eventData, fullMessageContent) => {
+            let margins = {
+                objectId: fullMessageContent.object,
+                frameId: fullMessageContent.frame
+            };
+            if (typeof eventData.left === 'number') {
+                margins.left = eventData.left;
+            }
+            if (typeof eventData.top === 'number') {
+                margins.top = eventData.top;
+            }
+            if (typeof eventData.right === 'number') {
+                margins.right = eventData.right;
+            }
+            if (typeof eventData.bottom === 'number') {
+                margins.bottom = eventData.bottom;
+            }
+
+            toolIframeMarginRestrictions[fullMessageContent.frame] = margins;
+
+            windowResizeHandler();
+        });
+        
+        realityEditor.network.addPostMessageHandler('removeViewportMarginLimitation', (eventData, fullMessageContent) => {
+            delete toolIframeMarginRestrictions[fullMessageContent.frame];
+            
+            windowResizeHandler();
+        });
+    }
+
+    /**
+     * Combines the user interface margins with margins requested by tools in the scene to get the overall margins
+     * @return {{top: number, left: number, bottom: number, right: number}}
+     */
+    function computeOverallViewportMargins() {
+        let maxLeft = viewportMargins.left;
+        let maxTop = viewportMargins.top;
+        let maxRight = viewportMargins.right;
+        let maxBottom = viewportMargins.bottom;
+
+        Object.keys(toolIframeMarginRestrictions).forEach(toolId => {
+            let info = toolIframeMarginRestrictions[toolId];
+            let tool = realityEditor.getFrame(info.objectId, toolId);
+            if (!tool) {
+                delete toolIframeMarginRestrictions[toolId];
+                return;
+            }
+
+            if (info.left) {
+                maxLeft = Math.max(info.left, maxLeft);
+            }
+            if (info.top) {
+                maxTop = Math.max(info.top, maxTop);
+            }
+            if (info.right) {
+                maxRight = Math.max(info.right, maxRight);
+            }
+            if (info.bottom) {
+                maxBottom = Math.max(info.bottom, maxBottom);
+            }
+        });
+
+        return {
+            left: maxLeft,
+            top: maxTop,
+            right: maxRight,
+            bottom: maxBottom
+        };
     }
 
     /**
@@ -115,8 +194,10 @@ createNameSpace('realityEditor.device.layout');
         // reformat pocket tile size/arrangement
         realityEditor.gui.pocket.onWindowResized();
         
-        let viewportWidth = window.innerWidth - viewportMargins.left - viewportMargins.right;
-        let viewportHeight = window.innerHeight - viewportMargins.top - viewportMargins.bottom;
+        let overallViewportMargins = computeOverallViewportMargins();
+
+        let viewportWidth = window.innerWidth - overallViewportMargins.left - overallViewportMargins.right;
+        let viewportHeight = window.innerHeight - overallViewportMargins.top - overallViewportMargins.bottom;
 
         // Resize the canvas used for drawing node links
         let nodeConnectionCanvas = document.querySelector('.canvas-node-connections');
@@ -125,8 +206,8 @@ createNameSpace('realityEditor.device.layout');
             nodeConnectionCanvas.height = viewportHeight;
             nodeConnectionCanvas.style.width = nodeConnectionCanvas.width + 'px';
             nodeConnectionCanvas.style.height = nodeConnectionCanvas.height + 'px';
-            nodeConnectionCanvas.style.left = viewportMargins.left + 'px';
-            nodeConnectionCanvas.style.top = viewportMargins.top + 'px';
+            nodeConnectionCanvas.style.left = overallViewportMargins.left + 'px';
+            nodeConnectionCanvas.style.top = overallViewportMargins.top + 'px';
         }
 
         // adjust the size of each tool's container div to match the viewport...
@@ -138,41 +219,60 @@ createNameSpace('realityEditor.device.layout');
             let cover = globalDOMCache[frameKey];
             // this is essential for rendering
             if (container) {
+                // container.style.width = `${window.innerWidth}px`;
+                // container.style.height = `${window.innerHeight}px`;
+                // // container.style.left = `${overallViewportMargins.left}px`;
+                // // container.style.top = `${overallViewportMargins.top}px`;
                 container.style.width = `${viewportWidth}px`;
                 container.style.height = `${viewportHeight}px`;
-                container.style.left = `${viewportMargins.left}px`;
-                container.style.top = `${viewportMargins.top}px`;
+                container.style.left = `${overallViewportMargins.left}px`;
+                container.style.top = `${overallViewportMargins.top}px`;
             }
             // this adjusts the fullscreen iframes to continue to be fullscreen
             if (iframe && iframe.classList.contains('webGlFrame')) {
-                iframe.style.width = `${viewportWidth}px`;
-                iframe.style.height = `${viewportHeight}px`;
+                iframe.style.width = `${window.innerWidth}px`;
+                iframe.style.height = `${window.innerHeight}px`;
                 if (cover) {
+                    // cover.style.width = `${window.innerWidth}px`;
+                    // cover.style.height = `${window.innerHeight}px`;
+
                     cover.style.width = `${viewportWidth}px`;
                     cover.style.height = `${viewportHeight}px`;
+                    cover.style.left = `${overallViewportMargins.left}px`;
+                    cover.style.top = `${overallViewportMargins.top}px`;
                 }
+                // iframe.style.width = `${viewportWidth}px`;
+                // iframe.style.height = `${viewportHeight}px`;
+                // if (cover) {
+                //     cover.style.width = `${viewportWidth}px`;
+                //     cover.style.height = `${viewportHeight}px`;
+                // }
+
+                container.style.width = `${window.innerWidth}px`;
+                container.style.height = `${window.innerHeight}px`;
+                container.style.left = 0;
+                container.style.top = 0;
             }
         });
 
         // trigger other modules that have subscribed using realityEditor.device.layout.onWindowResized(...)
-        callbacks.onWindowResized.forEach(callback => {
-            callback({
-                width: (window.innerWidth - viewportMargins.left - viewportMargins.right),
-                height: (window.innerHeight - viewportMargins.top - viewportMargins.bottom),
-                top: viewportMargins.top,
-                left: viewportMargins.left
-            });
-        });
+        callbacks.onWindowResized.forEach(triggerResizeCallback);
 
         // post a onWindowResized message into each tool that has subscribed to spatialInterface.onWindowResized(...)
         Object.keys(toolSubscriptions).forEach(frameKey => {
             let iframe = document.getElementById('iframe' + frameKey);
             if (!iframe) return;
             let eventData = {
+                onWindowOrViewportResized: {
+                    fullWindow: getFullWindowBoundingBox(),
+                    viewport: getViewportBoundingBox(),
+                    safeWindowBounds: getSafeWindowBoundingBox()
+                },
+                // deprecated but still included
                 onWindowResized: {
                     width: viewportWidth,
                     height: viewportHeight
-                }
+                },
             };
             iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
         });
@@ -184,13 +284,14 @@ createNameSpace('realityEditor.device.layout');
      */
     function onWindowResized(callback) {
         callbacks.onWindowResized.push(callback);
+        triggerResizeCallback(callback);
+    }
 
-        // call it once immediately, too
+    function triggerResizeCallback(callback) {
         callback({
-            width: (window.innerWidth - viewportMargins.left - viewportMargins.right),
-            height: (window.innerHeight - viewportMargins.top - viewportMargins.bottom),
-            top: viewportMargins.top,
-            left: viewportMargins.left
+            fullWindow: getFullWindowBoundingBox(),
+            viewport: getViewportBoundingBox(),
+            safeWindowBounds: getSafeWindowBoundingBox()
         });
     }
 
@@ -200,7 +301,7 @@ createNameSpace('realityEditor.device.layout');
      *  to fit awkward, non-rectangular screens (looking at you, iPhone X).
      */
     function adjustForScreenSize() {
-        var menuHeightDifference = window.innerHeight - MENU_HEIGHT;
+        let menuHeightDifference = window.innerHeight - MENU_HEIGHT;
 
         // vertically center the menu if the screen is taller than 320 px
         document.getElementById('UIButtons').style.top = menuHeightDifference / 2 + 'px';
@@ -360,11 +461,30 @@ createNameSpace('realityEditor.device.layout');
     }
 
     function getViewportBoundingBox() {
+        let overallViewportMargins = computeOverallViewportMargins();
         return {
-            left: viewportMargins.left,
-            top: viewportMargins.top,
-            width: window.innerWidth - viewportMargins.left - viewportMargins.right,
-            height: window.innerHeight - viewportMargins.top - viewportMargins.bottom,
+            width: window.innerWidth - overallViewportMargins.left - overallViewportMargins.right,
+            height: window.innerHeight - overallViewportMargins.top - overallViewportMargins.bottom,
+            top: overallViewportMargins.top,
+            left: overallViewportMargins.left,
+        };
+    }
+
+    function getFullWindowBoundingBox() {
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            top: 0,
+            left: 0
+        };
+    }
+
+    function getSafeWindowBoundingBox() {
+        return {
+            width: window.innerWidth - safeMargins.left - safeMargins.right, // account for title bars, notch insets, etc
+            height: window.innerHeight - safeMargins.top - safeMargins.bottom,
+            top: safeMargins.top,
+            left: safeMargins.left
         };
     }
     

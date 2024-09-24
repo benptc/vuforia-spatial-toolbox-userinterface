@@ -142,7 +142,9 @@ class Renderer {
         this.#globalScale = new GlobalScale(1000, 0.001);
         this.#scene.add(this.#globalScale.getNode());
 
-        realityEditor.device.layout.onWindowResized(({width, height, left, top}) => {
+        realityEditor.device.layout.onWindowResized(({viewport}) => {
+            const {width, height, left, top} = viewport;
+
             this.#renderer.setSize(width, height);
             // TODO: set left and top offset to domElement? here or elsewhere?
             domElement.style.width = width + 'px';

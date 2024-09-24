@@ -50,6 +50,16 @@ class EnvelopeIconRenderer {
                 this.updateEnvelope(envelope);
             });
         });
+
+        realityEditor.device.layout.onWindowResized(({viewport}) => {
+            let { left, top, width, height } = viewport;
+            Array.from(document.querySelectorAll('.minimizedEnvelopeContainer')).forEach((iconContainer) => {
+                iconContainer.style.left = left + 'px';
+                iconContainer.style.top = top + 'px';
+                iconContainer.style.width = width + 'px';
+                iconContainer.style.height = height + 'px';
+            });
+        });
     }
 
     onVehicleDeleted(event) {

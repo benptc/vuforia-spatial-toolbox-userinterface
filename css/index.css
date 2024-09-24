@@ -806,8 +806,8 @@ body {
     top: 0;
     background: transparent;
     pointer-events: none;
-    /*z-index: 5;*/
-    z-index: 900;
+    z-index: 5;
+    /*z-index: 900;*/
     transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 1);
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 1);
 }
@@ -1812,7 +1812,7 @@ Logic Interface CSS
     background-color: rgba(0,0,0,0.5);
     padding: 8px 16px;
     border-radius: 15px;
-    z-index: 1000;
+    z-index: 99;
     cursor: pointer;
 }
 

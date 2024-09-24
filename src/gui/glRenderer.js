@@ -296,7 +296,9 @@ createNameSpace("realityEditor.gui.glRenderer");
         canvas.style.top = viewportBbox.top + 'px';
         gl = canvas.getContext('webgl2');
 
-        realityEditor.device.layout.onWindowResized(({width, height, left, top}) => {
+        realityEditor.device.layout.onWindowResized(({viewport, fullWindow}) => {
+            const {width, height, left, top} = viewport;
+            // const {width, height, left, top} = fullWindow;
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
             // note: don't need to update canvas.width and height, just style.width and height
